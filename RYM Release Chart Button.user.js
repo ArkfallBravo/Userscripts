@@ -63,7 +63,7 @@
 
     const btn = document.createElement('div');
     btn.className = 'more_btn';
-    btn.textContent = 'Open Similar Chart';
+    btn.textContent = 'Similar Chart';
     btn.style.fontSize = '12px';
     btn.style.lineHeight = '27.6px';
     btn.onclick = function () { window.open(url, '_blank'); };
