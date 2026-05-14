@@ -61,21 +61,22 @@
 
     const url = buildChartUrl(genres, influences, descriptors);
 
-    const link = document.createElement('a');
-    link.href = url;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    link.textContent = 'Open Similar Chart';
-
-    // Mirror the catalog_btn appearance: same classes, no icon, no dropdown
-    link.className = 'more_btn';
-    link.style.cssText = 'display:inline-block; text-decoration:none; padding:.25em .8em; background-image:none;';
+    const btn = document.createElement('div');
+    btn.className = 'more_btn';
+    btn.textContent = 'Open Similar Chart';
+    btn.style.fontSize = '12px';
+    btn.style.lineHeight = '27.6px';
+    btn.onclick = function () { window.open(url, '_blank'); };
 
     const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'padding:.4em .3em .3em;';
-    wrapper.appendChild(link);
+    wrapper.style.cssText = 'float:left;';
+    wrapper.appendChild(btn);
+
+    const clear = document.createElement('div');
+    clear.style.cssText = 'clear:both;';
 
     section.appendChild(wrapper);
+    section.appendChild(clear);
   }
 
   if (document.readyState === 'loading') {
