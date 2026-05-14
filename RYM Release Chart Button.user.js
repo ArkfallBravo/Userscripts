@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      1.1
 // @description  Adds a button at the end of the main info section on release pages that opens a custom RYM chart with the release's genres, influences, and descriptors pre-set.
-// @author       lillyanasimson
+// @author       Helena S.
 // @match        https://rateyourmusic.com/release/*
 // @match        http://rateyourmusic.com/release/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=rateyourmusic.com
@@ -55,7 +55,7 @@
     btn.textContent = label;
     btn.style.fontSize = '12px';
     btn.style.lineHeight = '27.6px';
-    btn.onclick = function () { window.open(url, '_blank'); };
+    btn.onclick = function () { window.location.href = url; };
     return btn;
   }
 
@@ -71,7 +71,10 @@
 
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'display:flex; flex-direction:row; flex-wrap:wrap;';
-    wrapper.appendChild(makeBtn('Similar Chart',    buildChartUrl(genres, influences, descriptors)));
+    const firstBtn = makeBtn('Genres & Descriptors', buildChartUrl(genres, influences, descriptors));
+    firstBtn.style.paddingLeft = '0.8em';
+    firstBtn.style.marginLeft = '0';
+    wrapper.appendChild(firstBtn);
     wrapper.appendChild(makeBtn('Just Genres',      buildChartUrl(genres, influences, [])));
     wrapper.appendChild(makeBtn('Just Descriptors', buildChartUrl([], [], descriptors)));
 
