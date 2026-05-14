@@ -49,9 +49,19 @@
     return 'https://rateyourmusic.com/charts/top/album,ep,mixtape,djmix/all-time/' + parts.join('/') + '/';
   }
 
+  function makeBtn(label, url) {
+    const btn = document.createElement('div');
+    btn.className = 'more_btn';
+    btn.textContent = label;
+    btn.style.fontSize = '12px';
+    btn.style.lineHeight = '27.6px';
+    btn.onclick = function () { window.open(url, '_blank'); };
+    return btn;
+  }
+
   function addButton() {
-    const section = document.querySelector('.section_main_info.section_outer');
-    if (!section) return;
+    const table = document.querySelector('table.album_info');
+    if (!table) return;
 
     const genres      = collectGenres();
     const influences  = collectInfluences();
@@ -59,42 +69,24 @@
 
     if (!genres.length && !influences.length && !descriptors.length) return;
 
-    const url = buildChartUrl(genres, influences, descriptors);
-
-    const btn = document.createElement('div');
-    btn.className = 'more_btn';
-    btn.textContent = 'Similar Chart';
-    btn.style.fontSize = '12px';
-    btn.style.lineHeight = '27.6px';
-    btn.onclick = function () { window.open(url, '_blank'); };
-
-    const genreUrl = buildChartUrl(genres, influences, []);
-    const btnGenres = document.createElement('div');
-    btnGenres.className = 'more_btn';
-    btnGenres.textContent = 'Just Genres';
-    btnGenres.style.fontSize = '12px';
-    btnGenres.style.lineHeight = '27.6px';
-    btnGenres.onclick = function () { window.open(genreUrl, '_blank'); };
-
-    const descriptorUrl = buildChartUrl([], [], descriptors);
-    const btnDescriptors = document.createElement('div');
-    btnDescriptors.className = 'more_btn';
-    btnDescriptors.textContent = 'Just Descriptors';
-    btnDescriptors.style.fontSize = '12px';
-    btnDescriptors.style.lineHeight = '27.6px';
-    btnDescriptors.onclick = function () { window.open(descriptorUrl, '_blank'); };
-
     const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'display:flex; flex-direction:row;';
-    wrapper.appendChild(btn);
-    wrapper.appendChild(btnGenres);
-    wrapper.appendChild(btnDescriptors);
+    wrapper.style.cssText = 'display:flex; flex-direction:row; flex-wrap:wrap;';
+    wrapper.appendChild(makeBtn('Similar Chart',    buildChartUrl(genres, influences, descriptors)));
+    wrapper.appendChild(makeBtn('Just Genres',      buildChartUrl(genres, influences, [])));
+    wrapper.appendChild(makeBtn('Just Descriptors', buildChartUrl([], [], descriptors)));
 
-    const clear = document.createElement('div');
-    clear.style.cssText = 'clear:both;';
+    const td = document.createElement('td');
+    td.appendChild(wrapper);
 
-    section.appendChild(wrapper);
-    section.appendChild(clear);
+    const th = document.createElement('th');
+    th.className = 'info_hdr';
+    th.textContent = 'Charts';
+
+    const tr = document.createElement('tr');
+    tr.appendChild(th);
+    tr.appendChild(td);
+
+    table.querySelector('tbody').appendChild(tr);
   }
 
   if (document.readyState === 'loading') {
