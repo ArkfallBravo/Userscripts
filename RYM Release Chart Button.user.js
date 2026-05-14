@@ -68,9 +68,27 @@
     btn.style.lineHeight = '27.6px';
     btn.onclick = function () { window.open(url, '_blank'); };
 
+    const genreUrl = buildChartUrl(genres, influences, []);
+    const btnGenres = document.createElement('div');
+    btnGenres.className = 'more_btn';
+    btnGenres.textContent = 'Just Genres';
+    btnGenres.style.fontSize = '12px';
+    btnGenres.style.lineHeight = '27.6px';
+    btnGenres.onclick = function () { window.open(genreUrl, '_blank'); };
+
+    const descriptorUrl = buildChartUrl([], [], descriptors);
+    const btnDescriptors = document.createElement('div');
+    btnDescriptors.className = 'more_btn';
+    btnDescriptors.textContent = 'Just Descriptors';
+    btnDescriptors.style.fontSize = '12px';
+    btnDescriptors.style.lineHeight = '27.6px';
+    btnDescriptors.onclick = function () { window.open(descriptorUrl, '_blank'); };
+
     const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'float:left;';
+    wrapper.style.cssText = 'display:flex; flex-direction:row;';
     wrapper.appendChild(btn);
+    wrapper.appendChild(btnGenres);
+    wrapper.appendChild(btnDescriptors);
 
     const clear = document.createElement('div');
     clear.style.cssText = 'clear:both;';
