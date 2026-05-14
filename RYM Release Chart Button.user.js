@@ -36,12 +36,9 @@
   }
 
   function collectDescriptors() {
-    const slugs = [];
-    document.querySelectorAll('tr.release_descriptors meta[content]').forEach(function (meta) {
-      const content = meta.getAttribute('content');
-      if (content && content.trim()) slugs.push(slugify(content));
-    });
-    return slugs;
+    const span = document.querySelector('span.release_pri_descriptors');
+    if (!span || !span.textContent.trim()) return [];
+    return span.textContent.split(',').map(function (s) { return slugify(s); }).filter(Boolean);
   }
 
   function buildChartUrl(genres, influences, descriptors) {
@@ -68,10 +65,10 @@
     link.href = url;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    link.textContent = 'Open similar chart';
+    link.textContent = 'Open Similar Chart';
 
     // Mirror the catalog_btn appearance: same classes, no icon, no dropdown
-    link.className = 'catalog_btn';
+    link.className = 'more_btn';
     link.style.cssText = 'display:inline-block; text-decoration:none; padding:.25em .8em; background-image:none;';
 
     const wrapper = document.createElement('div');
