@@ -55,7 +55,7 @@
     btn.textContent = label;
     btn.style.fontSize = '12px';
     btn.style.lineHeight = '27.6px';
-    btn.onclick = function () { window.location.href = url; };
+    btn.onclick = function () { window.open(url, '_blank'); };
     return btn;
   }
 
