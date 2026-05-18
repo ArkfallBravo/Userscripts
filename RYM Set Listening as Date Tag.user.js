@@ -25,9 +25,8 @@
     const dateStr = todayTag();
     const existing = input.value.split(',').map(function (t) { return t.trim(); }).filter(Boolean);
 
-    if (existing.includes(dateStr)) return;
-
-    existing.push(dateStr);
+    if (!existing.includes(dateStr)) existing.push(dateStr);
+    if (!existing.includes('dated')) existing.push('dated');
     input.value = existing.join(', ');
 
     if (typeof window.tags !== 'undefined' && typeof window.tags.save === 'function') {
