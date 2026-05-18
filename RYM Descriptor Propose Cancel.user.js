@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         RYM Descriptor Propose Cancel
 // @namespace    http://tampermonkey.net/
-// @version      4.0
-// @description  Adds a "does not apply" button to the Propose bar on descriptor voting pages, and reflects existing vote state when the typed descriptor is already voted.
+// @version      4.1
+// @description  Adds a "does not apply" button to the Propose bar on descriptor voting pages.
 // @author       Helena S.
 // @match        https://rateyourmusic.com/rdescriptor/set*
 // @match        http://rateyourmusic.com/rdescriptor/set*
@@ -15,14 +15,6 @@
 
   const log = (...args) => console.log('[ebr-propose-cancel]', ...args);
   log('script loaded, url:', window.location.href, 'readyState:', document.readyState);
-
-  let proposeButtons = [];  // { btn, polarity, degree }
-  let banButton = null;
-
-  function getAlbumId() {
-    const el = document.querySelector('[id^="descriptorList"]');
-    return el ? el.id.replace('descriptorListl', '') : '';
-  }
 
   // ── Add the does-not-apply button ───────────────────────────────────────────
   function addBanButton() {
@@ -57,7 +49,7 @@
 
     const tmp = document.createElement('div');
     tmp.innerHTML = banHtml;
-    banButton = tmp.firstElementChild;
+    const banButton = tmp.firstElementChild;
 
     existingBtns[existingBtns.length - 1].insertAdjacentElement('afterend', banButton);
 
@@ -71,61 +63,6 @@
     });
 
     log('  ⊘ button inserted, html:', banButton.outerHTML);
-
-    // Register all propose buttons for highlight tracking
-    proposeButtons = [
-      { btn: existingBtns[0], polarity:  1, degree: 1 },
-      { btn: existingBtns[1], polarity:  1, degree: 2 },
-      { btn: existingBtns[2], polarity:  1, degree: 3 },
-      { btn: banButton,       polarity: -1, degree: 0 },
-    ];
-
-    // Watch input for vote-state reflection
-    input.addEventListener('input', () => updateHighlight(input.value));
-  }
-
-  // ── Find vote state for a descriptor name in the loaded list ────────────────
-  function findVoteState(name) {
-    if (!name.trim()) return null;
-    const norm = s => s.toLowerCase().replace(/\s+/g, ' ').trim();
-    const listEl = document.getElementById('descriptorListl' + getAlbumId());
-    if (!listEl) return null;
-
-    for (const row of listEl.querySelectorAll('tr')) {
-      const nameEl = row.querySelector('a.descriptor, b, strong, td:first-child a');
-      if (!nameEl || norm(nameEl.textContent) !== norm(name)) continue;
-
-      // A "cancel" button in the row signals the user has voted
-      const cancelEl = Array.from(row.querySelectorAll('input[type="button"], button'))
-        .find(b => (b.value || b.textContent).trim().toLowerCase() === 'cancel');
-      if (!cancelEl) return { voted: false };
-
-      // Find which vote button is highlighted (active/selected class or style difference)
-      const votedBtn = Array.from(row.querySelectorAll('button.ui_button.voting'))
-        .find(b => b.classList.contains('active') || b.classList.contains('selected') ||
-                   b.getAttribute('aria-pressed') === 'true');
-
-      if (!votedBtn) return { voted: true, polarity: null, degree: null };
-
-      if (votedBtn.querySelector('.fa-ban')) return { voted: true, polarity: -1, degree: 0 };
-      const stars = (votedBtn.textContent.trim().match(/★/g) || []).length;
-      return { voted: true, polarity: 1, degree: stars };
-    }
-    return null;
-  }
-
-  // ── Highlight propose bar buttons to reflect current vote ───────────────────
-  function updateHighlight(value) {
-    proposeButtons.forEach(({ btn }) => btn.style.outline = '');
-
-    const state = findVoteState(value);
-    if (!state || !state.voted || state.polarity === null) return;
-
-    proposeButtons.forEach(({ btn, polarity, degree }) => {
-      if (polarity === state.polarity && degree === state.degree) {
-        btn.style.outline = '2px solid var(--primary, #207bbf)';
-      }
-    });
   }
 
   // ── Init: try now, and also watch for the form to appear ───────────────────
