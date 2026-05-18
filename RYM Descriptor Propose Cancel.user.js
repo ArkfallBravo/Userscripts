@@ -59,7 +59,16 @@
       ? window.getComputedStyle(faIcon).fontFamily
       : '"FontAwesome"';
 
-    existingBtns[existingBtns.length - 1].insertAdjacentElement('afterend', banButton);
+    const lastBtn = existingBtns[existingBtns.length - 1];
+    lastBtn.insertAdjacentElement('afterend', banButton);
+
+    // Mirror the whitespace text node between the star buttons so the gap
+    // before the ban button matches the gaps between ★ / ★★ / ★★★.
+    const sepNode = lastBtn.previousSibling;
+    if (sepNode && sepNode.nodeType === Node.TEXT_NODE) {
+      banButton.before(sepNode.cloneNode());
+    }
+
     log('  ban button inserted, html:', banButton.outerHTML);
   }
 
