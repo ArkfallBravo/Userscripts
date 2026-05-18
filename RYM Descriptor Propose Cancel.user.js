@@ -51,7 +51,7 @@
     // Parsing via innerHTML binds the inline onclick to the page's main world
     // (where voteDescriptor and did() are defined) — setAttribute('onclick', ...)
     // doesn't reliably do that under Safari Userscripts.
-    const banHtml = `<button class="ui_button  voting" value="-" data-ebr-ban="1" title="Does not apply" `
+    const banHtml = `<button type="button" class="ui_button  voting" value="-" data-ebr-ban="1" title="Does not apply" `
       + `onclick="voteDescriptor(${assocId}, 'l', 0, selectedTrack, -1, 0, did('prigen').value);">`
       + `<i class="fa fa-ban"></i></button>`;
 
