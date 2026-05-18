@@ -16,6 +16,16 @@
   const log = (...args) => console.log('[ebr-propose-cancel]', ...args);
   log('script loaded, url:', window.location.href, 'readyState:', document.readyState);
 
+  // ── Fix RYM's misaligned ban button in descriptor rows ─────────────────────
+  function injectAlignFix() {
+    const style = document.createElement('style');
+    style.textContent = `
+      button.ui_button.voting { vertical-align: middle; }
+      form:has(#prigen) input[type="button"] { vertical-align: middle; }
+    `;
+    document.head.appendChild(style);
+  }
+
   // ── Add the does-not-apply button ───────────────────────────────────────────
   function addBanButton() {
     log('addBanButton called');
@@ -75,6 +85,7 @@
   // ── Init: try now, and also watch for the form to appear ───────────────────
   function init() {
     log('init() called, readyState:', document.readyState);
+    injectAlignFix();
     addBanButton();
 
     // Fallback: if the form/buttons load later, watch for them
