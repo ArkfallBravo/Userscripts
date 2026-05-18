@@ -39,30 +39,28 @@
     const assocMatch = firstOnclick.match(/voteDescriptor\(\s*(\d+)/);
     const assocId = assocMatch ? assocMatch[1] : '0';
 
-    // Build the ban button as a <button class="ui_button voting"> with a fa-ban icon.
+    // Build the ban button to match the existing <input type="button"> format.
+    // Use the FA ban unicode glyph (U+F05E) with the Font Awesome font-family
+    // read from an existing icon on the page, so it renders identically to
+    // the fa-ban icons elsewhere on RYM.
     // Parsing via innerHTML binds the inline onclick to the page's main world
     // (where voteDescriptor and did() are defined) — setAttribute('onclick', ...)
     // doesn't reliably do that under Safari Userscripts.
-    const banHtml = `<button type="button" class="ui_button  voting" value="-" data-ebr-ban="1" title="Does not apply" `
-      + `onclick="voteDescriptor(${assocId}, 'l', 0, selectedTrack, -1, 0, did('prigen').value);">`
-      + `<i class="fa fa-ban"></i></button>`;
+    const banHtml = `<input onclick="voteDescriptor(${assocId}, 'l', 0, selectedTrack, -1, 0, did('prigen').value);" `
+      + `type="button" value="" data-ebr-ban="1" title="Does not apply">`;
 
     const tmp = document.createElement('div');
     tmp.innerHTML = banHtml;
     const banButton = tmp.firstElementChild;
 
+    // Apply the Font Awesome font so the glyph renders correctly.
+    const faIcon = document.querySelector('.fa, .fas, .far, .fab');
+    banButton.style.fontFamily = faIcon
+      ? window.getComputedStyle(faIcon).fontFamily
+      : '"FontAwesome"';
+
     existingBtns[existingBtns.length - 1].insertAdjacentElement('afterend', banButton);
-
-    // Copy visual styles from an existing propose-bar button so the <button>
-    // element matches the <input type="button"> elements around it.
-    const refStyle = window.getComputedStyle(existingBtns[0]);
-    ['background', 'backgroundColor', 'color', 'border', 'borderRadius',
-     'padding', 'fontSize', 'fontFamily', 'height', 'lineHeight', 'cursor',
-     'verticalAlign', 'boxSizing'].forEach(function (prop) {
-      banButton.style[prop] = refStyle[prop];
-    });
-
-    log('  ⊘ button inserted, html:', banButton.outerHTML);
+    log('  ban button inserted, html:', banButton.outerHTML);
   }
 
   // ── Init: try now, and also watch for the form to appear ───────────────────
