@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RYM Hide Ratings
 // @namespace    http://tampermonkey.net/
-// @version      0.4.1
+// @version      0.5.0
 // @description  Hides RYM ratings unless you click a button.
 // @author       Helena S.
 // @match        https://rateyourmusic.com/artist/*
@@ -12,6 +12,15 @@
 // @downloadURL https://update.greasyfork.org/scripts/412862/Hide%20RYM%20Ratings%20If%20Unrated.user.js
 // @updateURL https://update.greasyfork.org/scripts/412862/Hide%20RYM%20Ratings%20If%20Unrated.meta.js
 // ==/UserScript==
+
+const STORAGE_KEY = 'rym-hide-ratings-visible';
+const isRatingsVisible = () => localStorage.getItem(STORAGE_KEY) === 'true';
+
+// Apply persisted state immediately at document-start, before body exists,
+// so ratings are never briefly revealed on page load.
+if (isRatingsVisible()) {
+  document.documentElement.classList.add('ratings-visible');
+}
 
 /**
  * Get what type of page we're on.
@@ -59,8 +68,8 @@ const setupHideStyles = function setupHideStyles() {
       hideCSS += ', ';
       showCSS += ', ';
     }
-    hideCSS += `body:not(.ratings-visible) ${selector}`;
-    showCSS += `body:not(.ratings-visible) ${selector}:active`;
+    hideCSS += `html:not(.ratings-visible) ${selector}`;
+    showCSS += `html:not(.ratings-visible) ${selector}:active`;
   });
   hideCSS += ' { opacity: 0 !important; }';
   showCSS += ' { opacity: 1 !important; }';
@@ -78,14 +87,14 @@ const setupUnboldStyles = function setupUnboldStyles(pageType) {
   styleEl.id = 'initial-unbold-styles';
 
   styleEl.innerText = `
-    body:not(.ratings-visible) .page_artist_songs_song:not(:has(.page_artist_tracks_track_stats_scores:active)) .bolded,
-    body:not(.ratings-visible) .tracks .track:not(:has(.page_release_section_tracks_track_stats_scores:active)) .bolded,
-    body:not(.ratings-visible) .disco_release:not(:has(.disco_avg_rating:active, .tm-visible)) .disco_mainline_recommended,
-    body:not(.ratings-visible) .films > li:not(:has(.disco_avg_rating:active, .tm-visible)) .recommended a.film {
+    html:not(.ratings-visible) .page_artist_songs_song:not(:has(.page_artist_tracks_track_stats_scores:active)) .bolded,
+    html:not(.ratings-visible) .tracks .track:not(:has(.page_release_section_tracks_track_stats_scores:active)) .bolded,
+    html:not(.ratings-visible) .disco_release:not(:has(.disco_avg_rating:active, .tm-visible)) .disco_mainline_recommended,
+    html:not(.ratings-visible) .films > li:not(:has(.disco_avg_rating:active, .tm-visible)) .recommended a.film {
       font-weight: normal !important;
     }
 
-    body:not(.ratings-visible) .disco_release:not(:has(.disco_avg_rating:active, .tm-visible)) .disco_mainline_recommended a.album {
+    html:not(.ratings-visible) .disco_release:not(:has(.disco_avg_rating:active, .tm-visible)) .disco_mainline_recommended a.album {
       color: var(--gen-blue-dark) !important;
     }
   `;
@@ -114,9 +123,10 @@ const fireShowEvent = function fireShowEvent() {
  * @param {HTMLElement} button The button to set up.
  */
 const setupHideButton = function setupHideButton(button) {
+  const visible = isRatingsVisible();
   // eslint-disable-next-line no-param-reassign
-  button.innerText = 'Show Ratings';
-  button.setAttribute('hiding', 'true');
+  button.innerText = visible ? 'Hide Ratings' : 'Show Ratings';
+  button.setAttribute('hiding', visible ? 'false' : 'true');
 
   button.addEventListener('click', (event) => {
     event.preventDefault();
@@ -146,11 +156,13 @@ const setupHideButton = function setupHideButton(button) {
  */
 const setupListeners = function setupListeners() {
   document.addEventListener('hideRatings', () => {
-    document.body.classList.remove('ratings-visible');
+    document.documentElement.classList.remove('ratings-visible');
+    localStorage.setItem(STORAGE_KEY, 'false');
   });
 
   document.addEventListener('showRatings', () => {
-    document.body.classList.add('ratings-visible');
+    document.documentElement.classList.add('ratings-visible');
+    localStorage.setItem(STORAGE_KEY, 'true');
   });
 };
 
@@ -185,7 +197,7 @@ const setupReleasePage = function setupReleasePage() {
     }
     return false;
   });
-  fireHideEvent();
+  if (isRatingsVisible()) fireShowEvent(); else fireHideEvent();
   createReleaseHideButton();
 };
 
@@ -247,7 +259,7 @@ const setupProfileListeners = function setupProfileListeners() {
   }
 
   const discogObserver = new MutationObserver(() => {
-    if (document.body.classList.contains('ratings-visible')) {
+    if (document.documentElement.classList.contains('ratings-visible')) {
       fireHideEvent();
     } else {
       fireShowEvent();
@@ -294,7 +306,7 @@ const createProfileHideButton = function createProfileHideButton() {
  */
 const setupProfilePage = function setupProfilePage() {
   setupProfileListeners();
-  fireHideEvent();
+  if (isRatingsVisible()) fireShowEvent(); else fireHideEvent();
   createProfileHideButton();
 };
 
