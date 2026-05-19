@@ -46,7 +46,7 @@
     if (genres.length)      parts.push('g:all,' + genres.join(','));
     if (influences.length)  parts.push('s:all,' + influences.join(','));
     if (descriptors.length) parts.push('d:all,' + descriptors.join(','));
-    return 'https://rateyourmusic.com/charts/top/album,ep,mixtape,djmix/all-time/' + parts.join('/') + '/';
+    return 'https://rateyourmusic.com/charts/top/album,ep,mixtape,djmix/all-time/' + parts.join('/') + '/excl:ratings/';
   }
 
   function makeBtn(label, url) {
