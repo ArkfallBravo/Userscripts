@@ -293,13 +293,16 @@
       const orig = window.RYMchart.removeBrowserItem.bind(window.RYMchart);
       window.RYMchart.removeBrowserItem = function () {
         log('removeBrowserItem called, args:', Array.from(arguments));
+        // Suppress RYM's internal call to onClickCreateChart during removal
+        // so the chart doesn't auto-refresh — user can hit "Update chart" themselves.
+        const origCreate = window.RYMchart.onClickCreateChart;
+        window.RYMchart.onClickCreateChart = function () {
+          log('  blocked onClickCreateChart triggered by removeBrowserItem');
+        };
         try {
-          const result = orig.apply(window.RYMchart, arguments);
-          log('removeBrowserItem returned:', result);
-          return result;
-        } catch (e) {
-          log('removeBrowserItem threw:', e);
-          throw e;
+          return orig.apply(window.RYMchart, arguments);
+        } finally {
+          window.RYMchart.onClickCreateChart = origCreate;
         }
       };
       log('patched RYMchart.removeBrowserItem');
