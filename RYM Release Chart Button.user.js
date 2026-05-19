@@ -44,7 +44,7 @@
   function buildChartUrl(genres, influences, descriptors) {
     const parts = [];
     if (genres.length)      parts.push('g:all,' + genres.join(','));
-    if (influences.length)  parts.push('s:all,' + influences.join(','));
+    if (influences.length)  parts.push('ge:all,' + influences.join(','));
     if (descriptors.length) parts.push('d:all,' + descriptors.join(','));
     return 'https://rateyourmusic.com/charts/top/album,ep,mixtape,djmix/all-time/' + parts.join('/') + '/excl:ratings/';
   }
