@@ -30,7 +30,7 @@
     // Global boolean to toggle exact percentages display
     const USE_EXACT_PCT = false;
     // Global boolean to toggle 50th percentile (median) display in rating line
-    const USE_P50 = true;
+    const USE_P50 = false;
     // Global Wilson Lower Bound confidence interval (e.g., 0.95 for 95% confidence)
     const WILSON_CONFIDENCE = 0.90;
 
