@@ -89,10 +89,17 @@
 
     const chart = window.RYMchart;
     if (chart && typeof chart.addBrowserItem === 'function') {
-      try { chart.addBrowserItem(cmd.ft, itemId, name); } catch (e) { console.error('addBrowserItem failed', e); }
-    }
-    if (chart && typeof chart.onClickCreateChart === 'function') {
-      try { chart.onClickCreateChart(); } catch (e) { console.error('onClickCreateChart failed', e); }
+      // Suppress any internal onClickCreateChart that addBrowserItem might
+      // trigger — user updates the chart manually via the "Update chart" link.
+      const origCreate = chart.onClickCreateChart;
+      chart.onClickCreateChart = function () { log('  blocked onClickCreateChart triggered by addBrowserItem'); };
+      try {
+        chart.addBrowserItem(cmd.ft, itemId, name);
+      } catch (e) {
+        console.error('addBrowserItem failed', e);
+      } finally {
+        chart.onClickCreateChart = origCreate;
+      }
     }
   }
 
