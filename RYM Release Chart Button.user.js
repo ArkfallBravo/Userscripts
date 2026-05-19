@@ -111,10 +111,9 @@
     const primarySlugs      = new Set();
     const influenceSlugs    = new Set();
 
-    doc.querySelectorAll('td').forEach(function (td) {
-      const genreLink = td.querySelector('a.genre[href*="/genre/"]');
-      if (!genreLink) return;
-      const m = (genreLink.getAttribute('href') || '').match(/\/genre\/([^/]+)\//);
+    // Each genre entry: <div><a class="genre" href="/genre/SLUG/">Name</a></div><p>⤷ Parent</p>
+    doc.querySelectorAll('a.genre[href*="/genre/"]').forEach(function (a) {
+      const m = (a.getAttribute('href') || '').match(/\/genre\/([^/]+)\//);
       if (!m) return;
       const thisSlug = m[1];
 
@@ -123,13 +122,16 @@
                    : null;
       if (!target) return;
 
-      td.querySelectorAll('p').forEach(function (p) {
-        const text = p.textContent.trim();
-        if (!text.startsWith('⤷')) return;
-        text.replace(/^⤷\s*/, '').split(',').forEach(function (name) {
-          const s = slugify(name);
-          if (s) target.add(s);
-        });
+      // The ⤷ paragraph is the next sibling of the genre's containing div
+      const containerDiv = a.parentElement;
+      if (!containerDiv) return;
+      const next = containerDiv.nextElementSibling;
+      if (!next || next.tagName !== 'P') return;
+      const text = next.textContent.trim();
+      if (!text.startsWith('⤷')) return;
+      text.replace(/^⤷\s*/, '').split(',').forEach(function (name) {
+        const s = slugify(name);
+        if (s) target.add(s);
       });
     });
 
