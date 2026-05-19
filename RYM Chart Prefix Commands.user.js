@@ -51,40 +51,41 @@
   }
 
   function matchesScope(r, scope) {
-    if (typeof r.type === 'string') return r.type === scope;
-    if (typeof r.path === 'string') {
-      if (scope === 'descriptor') return r.path.startsWith('d:');
-      return r.path.startsWith('g:') || !r.path.includes(':');
-    }
+    // API returns results with `component: "descriptor"` or `component: "genre"`
+    // and paths like "descriptor/20178" or "genre/123".
+    if (typeof r.component === 'string') return r.component === scope;
+    if (typeof r.path === 'string') return r.path.startsWith(scope + '/');
     return false;
   }
 
   function fetchSuggestions(q, scope) {
     const key = scope + ':' + q.toLowerCase().trim();
-    if (cache.has(key)) return cache.get(key);
+    if (cache.has(key)) { log('fetchSuggestions (cache hit) for', key); return cache.get(key); }
     const url = new URL('/api/1/browse/music/', window.location.origin);
     url.searchParams.set('q', q);
     url.searchParams.set('component', '');
+    log('fetchSuggestions firing for', key, 'url:', url.toString());
     const p = fetch(url.toString(), { credentials: 'include' })
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        return (data.results || []).filter(function (r) { return matchesScope(r, scope); }).slice(0, 12);
+        const all = data.results || [];
+        const filtered = all.filter(function (r) { return matchesScope(r, scope); }).slice(0, 12);
+        log('fetchSuggestions response: total=', all.length, 'filtered=', filtered.length, 'sample=', all.slice(0, 3));
+        return filtered;
       })
-      .catch(function () { return []; });
+      .catch(function (e) { log('fetchSuggestions error:', e); return []; });
     cache.set(key, p);
     return p;
   }
 
   function applyItem(cmd, item) {
     const name = item.display_name || item.name || '';
-    const path = item.path || '';
-    if (!name || !path) return;
-
-    // RYMchart.addBrowserItem expects a numeric ID, not the full path string.
-    // The path looks like "g:genre/5" or "d:descriptor/42"; extract the number.
-    const idMatch = path.match(/\/(\d+)$/);
-    const itemId = idMatch ? parseInt(idMatch[1], 10) : path;
-    log('applyItem: ft=', cmd.ft, 'id=', itemId, 'name=', name, 'path=', path);
+    // API gives us assoc_id (e.g. 20178) which is what addBrowserItem expects.
+    const itemId = item.assoc_id != null
+      ? item.assoc_id
+      : (function () { const m = (item.path || '').match(/\/(\d+)$/); return m ? parseInt(m[1], 10) : null; })();
+    if (!name || itemId == null) return;
+    log('applyItem: ft=', cmd.ft, 'id=', itemId, 'name=', name);
 
     const chart = window.RYMchart;
     if (chart && typeof chart.addBrowserItem === 'function') {
