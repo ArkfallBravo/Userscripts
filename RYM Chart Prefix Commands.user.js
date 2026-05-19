@@ -322,6 +322,19 @@
     input.addEventListener('focus', function () { log('input focused, currentCmd:', currentCmd); });
     input.addEventListener('blur',  function () { log('input blurred, currentCmd:', currentCmd); });
 
+    // Global Option/Alt + Enter: trigger chart update from anywhere on the page.
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && e.altKey && document.activeElement !== input) {
+        e.preventDefault();
+        e.stopPropagation();
+        const chart = window.RYMchart;
+        if (chart && typeof chart.onClickCreateChart === 'function') {
+          log('global Alt+Enter — updating chart');
+          try { chart.onClickCreateChart(); } catch (err) { console.error('onClickCreateChart failed', err); }
+        }
+      }
+    }, true);
+
     // Intercept RYMchart.removeBrowserItem to log removal attempts.
     // RYMchart may not exist yet, so poll briefly.
     let patchAttempts = 0;
