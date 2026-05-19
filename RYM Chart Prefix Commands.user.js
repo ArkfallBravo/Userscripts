@@ -243,6 +243,22 @@
   }
 
   function onKeyDown(e) {
+    // Option/Alt + Enter: update the chart with current filters, regardless of
+    // prefix mode. If a suggestion is highlighted, apply it first.
+    if (e.key === 'Enter' && e.altKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (currentCmd && suggestions.length) {
+        applyItem(currentCmd, suggestions[activeIndex]);
+        resetInput();
+      }
+      const chart = window.RYMchart;
+      if (chart && typeof chart.onClickCreateChart === 'function') {
+        try { chart.onClickCreateChart(); } catch (err) { console.error('onClickCreateChart failed', err); }
+      }
+      return;
+    }
+
     if (!currentCmd) return;
     if (e.key === 'Tab') {
       e.preventDefault();
