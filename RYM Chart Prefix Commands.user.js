@@ -128,6 +128,8 @@
   }
 
   function render() {
+    log('render() called, currentCmd:', currentCmd ? currentCmd.prefix : null, 'suggestions:', suggestions.length);
+    showList();
     const container = getContainer();
     if (!container) return;
 
@@ -195,8 +197,10 @@
   }
 
   function showList() {
+    // RYM's CSS sets .ui_browser_list to display:none, so we must set it
+    // explicitly to 'block' — clearing the inline style falls back to hidden.
     const list = document.getElementById(LIST_ID);
-    if (list) list.style.display = '';
+    if (list) list.style.display = 'block';
   }
 
   function leavePrefixMode() {
@@ -284,6 +288,17 @@
       // Show a hint instead of the Genres/Descriptors/Locations category list.
       showList();
       renderHint();
+    };
+
+    const originalBlur = input.onblur;
+    input.onblur = function (event) {
+      // Suppress RYM's blur handler when in prefix mode so it doesn't hide the
+      // suggestion list right when the user might be reaching for the dropdown.
+      if (currentCmd !== null) {
+        log('  blocked RYM onblur during prefix mode');
+        return;
+      }
+      if (originalBlur) originalBlur.call(this, event);
     };
 
     input.addEventListener('input', onInput);
