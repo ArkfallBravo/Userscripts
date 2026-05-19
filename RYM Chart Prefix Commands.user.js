@@ -79,9 +79,16 @@
     const name = item.display_name || item.name || '';
     const path = item.path || '';
     if (!name || !path) return;
+
+    // RYMchart.addBrowserItem expects a numeric ID, not the full path string.
+    // The path looks like "g:genre/5" or "d:descriptor/42"; extract the number.
+    const idMatch = path.match(/\/(\d+)$/);
+    const itemId = idMatch ? parseInt(idMatch[1], 10) : path;
+    log('applyItem: ft=', cmd.ft, 'id=', itemId, 'name=', name, 'path=', path);
+
     const chart = window.RYMchart;
     if (chart && typeof chart.addBrowserItem === 'function') {
-      try { chart.addBrowserItem(cmd.ft, path, name); } catch (e) { console.error('addBrowserItem failed', e); }
+      try { chart.addBrowserItem(cmd.ft, itemId, name); } catch (e) { console.error('addBrowserItem failed', e); }
     }
     if (chart && typeof chart.onClickCreateChart === 'function') {
       try { chart.onClickCreateChart(); } catch (e) { console.error('onClickCreateChart failed', e); }
@@ -273,6 +280,36 @@
 
     input.addEventListener('input', onInput);
     input.addEventListener('keydown', onKeyDown, true);
+    input.addEventListener('focus', function () { log('input focused, currentCmd:', currentCmd); });
+    input.addEventListener('blur',  function () { log('input blurred, currentCmd:', currentCmd); });
+
+    // Intercept RYMchart.removeBrowserItem to log removal attempts.
+    // RYMchart may not exist yet, so poll briefly.
+    let patchAttempts = 0;
+    const patchInterval = setInterval(function () {
+      if (++patchAttempts > 20) { clearInterval(patchInterval); return; }
+      if (!window.RYMchart || typeof window.RYMchart.removeBrowserItem !== 'function') return;
+      clearInterval(patchInterval);
+      const orig = window.RYMchart.removeBrowserItem.bind(window.RYMchart);
+      window.RYMchart.removeBrowserItem = function () {
+        log('removeBrowserItem called, args:', Array.from(arguments));
+        try {
+          const result = orig.apply(window.RYMchart, arguments);
+          log('removeBrowserItem returned:', result);
+          return result;
+        } catch (e) {
+          log('removeBrowserItem threw:', e);
+          throw e;
+        }
+      };
+      log('patched RYMchart.removeBrowserItem');
+    }, 200);
+
+    // Log clicks on chip remove buttons so we can see if the event reaches them.
+    document.addEventListener('click', function (e) {
+      const chip = e.target.closest('.page_chart_query_browser_item');
+      if (chip) log('chip click — target:', e.target.tagName, e.target.className, 'chip id:', chip.id);
+    }, true);
 
     // Watch the container: whenever RYM writes its own categorized list back
     // (recognisable by the id="ui_browser_list_item__…" elements it uses),
