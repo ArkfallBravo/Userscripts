@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         RYM Chart Prefix Commands
 // @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  Adds prefix commands (+g/+i/+gi/-g/-i/-gi for genres, +d/-d for descriptors) to RYM's chart search box. Tab / Shift+Tab to cycle suggestions, Enter to apply.
+// @version      2.0
+// @description  Always-on genre/descriptor autocomplete for RYM charts. Ctrl+1 genre/desc · Ctrl+2 influence · Ctrl+3 either · Ctrl+` exclude. Also supports +g/-g/+i/-i/+gi/-gi/+d/-d prefix mode.
 // @author       Helena S.
 // @match        https://rateyourmusic.com/charts/*
 // @match        http://rateyourmusic.com/charts/*
@@ -35,14 +35,14 @@
   // ── State ──────────────────────────────────────────────────────────────────
   let suggestions   = [];
   let activeIndex   = 0;
-  let currentCmd    = null;
+  let currentCmd    = null; // non-null only in prefix mode
+  let excludeMode   = false;
   let debounceTimer = null;
-  let originalKeyUp = null; // set at mount to RYM's inline handler, then wrapped
+  let originalKeyUp = null;
   const cache = new Map();
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function parseInput(text) {
-    // Match longest prefix first (gi before g/i). Allow no query yet, or " " + query.
     const m = text.match(/^([+\-](?:gi|g|i|d))(?:\s+(.*))?$/i);
     if (!m) return null;
     const cmd = PREFIX_MAP[m[1].toLowerCase()];
@@ -51,8 +51,6 @@
   }
 
   function matchesScope(r, scope) {
-    // API returns results with `component: "descriptor"` or `component: "genre"`
-    // and paths like "descriptor/20178" or "genre/123".
     if (typeof r.component === 'string') return r.component === scope;
     if (typeof r.path === 'string') return r.path.startsWith(scope + '/');
     return false;
@@ -60,17 +58,17 @@
 
   function fetchSuggestions(q, scope) {
     const key = scope + ':' + q.toLowerCase().trim();
-    if (cache.has(key)) { log('fetchSuggestions (cache hit) for', key); return cache.get(key); }
+    if (cache.has(key)) return cache.get(key);
     const url = new URL('/api/1/browse/music/', window.location.origin);
     url.searchParams.set('q', q);
     url.searchParams.set('component', '');
-    log('fetchSuggestions firing for', key, 'url:', url.toString());
     const p = fetch(url.toString(), { credentials: 'include' })
       .then(function (r) { return r.json(); })
       .then(function (data) {
         const all = data.results || [];
-        const filtered = all.filter(function (r) { return matchesScope(r, scope); }).slice(0, 12);
-        log('fetchSuggestions response: total=', all.length, 'filtered=', filtered.length, 'sample=', all.slice(0, 3));
+        const filtered = scope === 'all'
+          ? all.slice(0, 12)
+          : all.filter(function (r) { return matchesScope(r, scope); }).slice(0, 12);
         return filtered;
       })
       .catch(function (e) { log('fetchSuggestions error:', e); return []; });
@@ -78,23 +76,34 @@
     return p;
   }
 
-  function applyItem(cmd, item) {
+  // Returns the filter type string for a given component, shortcut key, and exclude state.
+  function filterTypeFor(component, key, exclude) {
+    if (component === 'genre') {
+      if (key === 1) return exclude ? 'genre_exclude'        : 'genre_include';
+      if (key === 2) return exclude ? 'sec_genre_exclude'    : 'sec_genre_include';
+      if (key === 3) return exclude ? 'genre_either_exclude' : 'genre_either_include';
+    }
+    if (component === 'descriptor') {
+      if (key === 1) return exclude ? 'descriptor_exclude' : 'descriptor_include';
+      // keys 2 and 3 don't apply to descriptors
+    }
+    return null;
+  }
+
+  function applyItem(ft, item) {
     const name = item.display_name || item.name || '';
-    // API gives us assoc_id (e.g. 20178) which is what addBrowserItem expects.
     const itemId = item.assoc_id != null
       ? item.assoc_id
       : (function () { const m = (item.path || '').match(/\/(\d+)$/); return m ? parseInt(m[1], 10) : null; })();
     if (!name || itemId == null) return;
-    log('applyItem: ft=', cmd.ft, 'id=', itemId, 'name=', name);
+    log('applyItem: ft=', ft, 'id=', itemId, 'name=', name);
 
     const chart = window.RYMchart;
     if (chart && typeof chart.addBrowserItem === 'function') {
-      // Suppress any internal onClickCreateChart that addBrowserItem might
-      // trigger — user updates the chart manually via the "Update chart" link.
       const origCreate = chart.onClickCreateChart;
-      chart.onClickCreateChart = function () { log('  blocked onClickCreateChart triggered by addBrowserItem'); };
+      chart.onClickCreateChart = function () {};
       try {
-        chart.addBrowserItem(cmd.ft, itemId, name);
+        chart.addBrowserItem(ft, itemId, name);
       } catch (e) {
         console.error('addBrowserItem failed', e);
       } finally {
@@ -117,59 +126,80 @@
     if (!container) return;
     container.innerHTML = `
       <div class="ui_browser_list_item ui_browser_list_item_category">
-        <div class="ui_browser_list_item_category_title">Chart filter commands</div>
+        <div class="ui_browser_list_item_category_title">Chart filter shortcuts</div>
         <div class="ui_browser_list_item_category_description">
-          +g &nbsp;genre &nbsp;·&nbsp; -g &nbsp;genre &nbsp;·&nbsp;
-          +i &nbsp;influence &nbsp;·&nbsp; -i &nbsp;influence &nbsp;·&nbsp;
-          +gi / -gi &nbsp;either &nbsp;·&nbsp;
-          +d / -d &nbsp;descriptor
+          Type to search &nbsp;·&nbsp;
+          ^1 genre/desc &nbsp;·&nbsp; ^2 influence &nbsp;·&nbsp; ^3 either &nbsp;·&nbsp; ^\` exclude<br>
+          Prefix mode: +g −g &nbsp;+i −i &nbsp;+gi −gi &nbsp;+d −d
         </div>
       </div>`;
   }
 
   function render() {
-    log('render() called, currentCmd:', currentCmd ? currentCmd.prefix : null, 'suggestions:', suggestions.length);
     showList();
     const container = getContainer();
     if (!container) return;
 
-    if (!currentCmd) {
-      // Out of prefix mode: leave RYM's own contents alone.
+    if (currentCmd) {
+      // ── Prefix mode ──
+      if (!currentCmd.query) {
+        container.innerHTML = `<div class="ui_browser_list_item ui_browser_list_item_category">
+          <div class="ui_browser_list_item_category_title">${escapeHtml(currentCmd.prefix)} …</div>
+          <div class="ui_browser_list_item_category_description">${escapeHtml(currentCmd.label)} — type to search</div>
+        </div>`;
+        return;
+      }
+      if (!suggestions.length) {
+        container.innerHTML = `<div class="ui_browser_list_item ui_browser_list_item_category">
+          <div class="ui_browser_list_item_category_title">No matches</div>
+          <div class="ui_browser_list_item_category_description">${escapeHtml(currentCmd.label)}</div>
+        </div>`;
+        return;
+      }
+      let html = '';
+      suggestions.forEach(function (s, i) {
+        const name = s.display_name || s.name || '';
+        const activeCls = i === activeIndex ? ' ebr-active' : '';
+        html += `<div class="ui_browser_list_item ui_browser_list_item_category${activeCls}" data-ebr-idx="${i}">
+          <div class="ui_browser_list_item_category_title">${escapeHtml(name)}</div>
+        </div>`;
+      });
+      container.innerHTML = html;
+      container.querySelectorAll('[data-ebr-idx]').forEach(function (el) {
+        el.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          const idx = parseInt(el.getAttribute('data-ebr-idx'), 10);
+          applyItem(currentCmd.ft, suggestions[idx]);
+          resetInput();
+        });
+      });
       return;
     }
 
-    if (!currentCmd.query) {
-      container.innerHTML = `<div class="ui_browser_list_item ui_browser_list_item_category">
-        <div class="ui_browser_list_item_category_title">${escapeHtml(currentCmd.prefix)} …</div>
-        <div class="ui_browser_list_item_category_description">${escapeHtml(currentCmd.label)} — type to search</div>
-      </div>`;
-      return;
-    }
+    // ── Free mode ──
+    if (!suggestions.length) return;
 
-    if (!suggestions.length) {
-      container.innerHTML = `<div class="ui_browser_list_item ui_browser_list_item_category">
-        <div class="ui_browser_list_item_category_title">No matches</div>
-        <div class="ui_browser_list_item_category_description">${escapeHtml(currentCmd.label)}</div>
-      </div>`;
-      return;
-    }
-
-    let html = '';
+    const exclHtml = excludeMode
+      ? ' <span style="color:var(--color-primary,#c0392b);font-weight:bold;">[EXCL]</span>'
+      : '';
+    let html = `<div class="ui_browser_list_item ui_browser_list_item_category">
+      <div class="ui_browser_list_item_category_title">^1 genre/desc &nbsp;·&nbsp; ^2 influence &nbsp;·&nbsp; ^3 either${exclHtml}</div>
+      <div class="ui_browser_list_item_category_description">Tab to cycle &nbsp;·&nbsp; ^\` toggle exclude</div>
+    </div>`;
     suggestions.forEach(function (s, i) {
       const name = s.display_name || s.name || '';
+      const typeLabel = s.component === 'descriptor' ? 'd' : 'g';
       const activeCls = i === activeIndex ? ' ebr-active' : '';
       html += `<div class="ui_browser_list_item ui_browser_list_item_category${activeCls}" data-ebr-idx="${i}">
-        <div class="ui_browser_list_item_category_title">${escapeHtml(name)}</div>
+        <div class="ui_browser_list_item_category_title">${escapeHtml(name)}<span style="opacity:0.5;font-size:0.85em;margin-left:0.5em;">${typeLabel}</span></div>
       </div>`;
     });
     container.innerHTML = html;
-
     container.querySelectorAll('[data-ebr-idx]').forEach(function (el) {
       el.addEventListener('mousedown', function (e) {
         e.preventDefault();
-        const idx = parseInt(el.getAttribute('data-ebr-idx'), 10);
-        applyItem(currentCmd, suggestions[idx]);
-        resetInput();
+        activeIndex = parseInt(el.getAttribute('data-ebr-idx'), 10);
+        render();
       });
     });
   }
@@ -192,13 +222,14 @@
   function resetInput() {
     const input = document.getElementById(INPUT_ID);
     if (input) input.value = '';
-    leavePrefixMode();
+    currentCmd  = null;
+    suggestions = [];
+    activeIndex = 0;
+    excludeMode = false;
     renderHint();
   }
 
   function showList() {
-    // RYM's CSS sets .ui_browser_list to display:none, so we must set it
-    // explicitly to 'block' — clearing the inline style falls back to hidden.
     const list = document.getElementById(LIST_ID);
     if (list) list.style.display = 'block';
   }
@@ -209,32 +240,12 @@
     activeIndex = 0;
   }
 
-  function onInput(e) {
-    const input = e.target;
-    const cmd = parseInput(input.value);
-
-    if (!cmd) {
-      if (currentCmd !== null) leavePrefixMode();
-      return;
-    }
-
-    currentCmd = cmd;
-    activeIndex = 0;
-    showList();
-
-    if (!cmd.query) {
-      suggestions = [];
-      render();
-      return;
-    }
-
+  function scheduleSearch(q, scope, matchFn) {
     if (debounceTimer) clearTimeout(debounceTimer);
-    // Render immediately so stale results don't sit visible during the debounce
     render();
-    const captured = cmd;
     debounceTimer = setTimeout(function () {
-      fetchSuggestions(cmd.query, cmd.scope).then(function (results) {
-        if (!currentCmd || currentCmd.prefix !== captured.prefix || currentCmd.query !== captured.query) return;
+      fetchSuggestions(q, scope).then(function (results) {
+        if (!matchFn()) return;
         suggestions = results;
         activeIndex = 0;
         render();
@@ -242,14 +253,74 @@
     }, 180);
   }
 
+  function onInput(e) {
+    const input = e.target;
+    const cmd = parseInput(input.value);
+
+    if (cmd) {
+      currentCmd = cmd;
+      activeIndex = 0;
+      showList();
+      if (!cmd.query) {
+        suggestions = [];
+        render();
+        return;
+      }
+      const captured = cmd;
+      scheduleSearch(cmd.query, cmd.scope, function () {
+        return currentCmd && currentCmd.prefix === captured.prefix && currentCmd.query === captured.query;
+      });
+      return;
+    }
+
+    // Free mode
+    if (currentCmd !== null) leavePrefixMode();
+
+    const q = input.value.trim();
+    if (!q) {
+      suggestions = [];
+      renderHint();
+      return;
+    }
+
+    showList();
+    const capturedQ = q;
+    scheduleSearch(q, 'all', function () {
+      const inp = document.getElementById(INPUT_ID);
+      return inp && inp.value.trim() === capturedQ;
+    });
+  }
+
   function onKeyDown(e) {
-    // Option/Alt + Enter: update the chart with current filters, regardless of
-    // prefix mode. If a suggestion is highlighted, apply it first.
-    if (e.key === 'Enter' && e.altKey) {
+    // ^` — toggle exclude mode
+    if (e.key === '`' && e.ctrlKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      excludeMode = !excludeMode;
+      render();
+      return;
+    }
+
+    // ^1 / ^2 / ^3 — apply highlighted suggestion
+    if (e.ctrlKey && (e.key === '1' || e.key === '2' || e.key === '3')) {
+      if (!suggestions.length) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const item = suggestions[activeIndex];
+      const component = item.component || (item.path || '').split('/')[0];
+      const ft = filterTypeFor(component, parseInt(e.key), excludeMode);
+      if (!ft) return;
+      applyItem(ft, item);
+      resetInput();
+      return;
+    }
+
+    // ^Enter — apply highlighted suggestion (prefix mode) then update chart
+    if (e.key === 'Enter' && e.ctrlKey) {
       e.preventDefault();
       e.stopPropagation();
       if (currentCmd && suggestions.length) {
-        applyItem(currentCmd, suggestions[activeIndex]);
+        applyItem(currentCmd.ft, suggestions[activeIndex]);
         resetInput();
       }
       const chart = window.RYMchart;
@@ -259,20 +330,26 @@
       return;
     }
 
-    if (!currentCmd) return;
-    if (e.key === 'Tab') {
+    // Tab — cycle suggestions (both modes)
+    if (e.key === 'Tab' && suggestions.length) {
       e.preventDefault();
       e.stopPropagation();
-      if (!suggestions.length) return;
       activeIndex = (activeIndex + (e.shiftKey ? -1 : 1) + suggestions.length) % suggestions.length;
       render();
-    } else if (e.key === 'Enter') {
-      if (!suggestions.length) return;
+      return;
+    }
+
+    // Enter — apply in prefix mode only
+    if (e.key === 'Enter' && currentCmd && suggestions.length) {
       e.preventDefault();
       e.stopPropagation();
-      applyItem(currentCmd, suggestions[activeIndex]);
+      applyItem(currentCmd.ft, suggestions[activeIndex]);
       resetInput();
-    } else if (e.key === 'Escape') {
+      return;
+    }
+
+    // Escape
+    if (e.key === 'Escape') {
       e.preventDefault();
       resetInput();
     }
@@ -282,61 +359,48 @@
   function mount() {
     log('mount() called');
     const input = document.getElementById(INPUT_ID);
-    log('  input element:', input);
     if (!input) return;
     injectStyles();
 
-    // Wrap onkeyup and onfocus so RYM's browser never renders its own list
-    // while we are (or might be) in prefix mode.
+    // Suppress RYM's keyup whenever we have text in the input (free mode takes over).
     originalKeyUp = input.onkeyup;
     input.onkeyup = function (event) {
-      const val = input.value.trim();
-      if (currentCmd !== null || /^[+\-]/.test(val)) {
-        log('  suppressing RYM keyup for:', val);
-        return;
-      }
+      if (input.value.trim() || currentCmd !== null) return;
       if (originalKeyUp) originalKeyUp.call(this, event);
     };
 
     const originalFocus = input.onfocus;
     input.onfocus = function (event) {
-      // Always suppress RYM's focus handler; we control the list ourselves.
-      // Show a hint instead of the Genres/Descriptors/Locations category list.
       showList();
-      renderHint();
+      if (suggestions.length) {
+        render();
+      } else {
+        renderHint();
+      }
     };
 
     const originalBlur = input.onblur;
     input.onblur = function (event) {
-      // Suppress RYM's blur handler when in prefix mode so it doesn't hide the
-      // suggestion list right when the user might be reaching for the dropdown.
-      if (currentCmd !== null) {
-        log('  blocked RYM onblur during prefix mode');
-        return;
-      }
+      if (currentCmd !== null || suggestions.length) return;
       if (originalBlur) originalBlur.call(this, event);
     };
 
     input.addEventListener('input', onInput);
     input.addEventListener('keydown', onKeyDown, true);
-    input.addEventListener('focus', function () { log('input focused, currentCmd:', currentCmd); });
-    input.addEventListener('blur',  function () { log('input blurred, currentCmd:', currentCmd); });
 
-    // Global Option/Alt + Enter: trigger chart update from anywhere on the page.
+    // Global ^Enter: update chart from anywhere on the page.
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' && e.altKey && document.activeElement !== input) {
+      if (e.key === 'Enter' && e.ctrlKey && document.activeElement !== input) {
         e.preventDefault();
         e.stopPropagation();
         const chart = window.RYMchart;
         if (chart && typeof chart.onClickCreateChart === 'function') {
-          log('global Alt+Enter — updating chart');
           try { chart.onClickCreateChart(); } catch (err) { console.error('onClickCreateChart failed', err); }
         }
       }
     }, true);
 
-    // Intercept RYMchart.removeBrowserItem to log removal attempts.
-    // RYMchart may not exist yet, so poll briefly.
+    // Patch RYMchart.removeBrowserItem to suppress auto chart update on chip removal.
     let patchAttempts = 0;
     const patchInterval = setInterval(function () {
       if (++patchAttempts > 20) { clearInterval(patchInterval); return; }
@@ -344,37 +408,22 @@
       clearInterval(patchInterval);
       const orig = window.RYMchart.removeBrowserItem.bind(window.RYMchart);
       window.RYMchart.removeBrowserItem = function () {
-        log('removeBrowserItem called, args:', Array.from(arguments));
-        // Suppress RYM's internal call to onClickCreateChart during removal
-        // so the chart doesn't auto-refresh — user can hit "Update chart" themselves.
         const origCreate = window.RYMchart.onClickCreateChart;
-        window.RYMchart.onClickCreateChart = function () {
-          log('  blocked onClickCreateChart triggered by removeBrowserItem');
-        };
+        window.RYMchart.onClickCreateChart = function () {};
         try {
           return orig.apply(window.RYMchart, arguments);
         } finally {
           window.RYMchart.onClickCreateChart = origCreate;
         }
       };
-      log('patched RYMchart.removeBrowserItem');
     }, 200);
 
-    // Log clicks on chip remove buttons so we can see if the event reaches them.
-    document.addEventListener('click', function (e) {
-      const chip = e.target.closest('.page_chart_query_browser_item');
-      if (chip) log('chip click — target:', e.target.tagName, e.target.className, 'chip id:', chip.id);
-    }, true);
-
-    // Watch the container: whenever RYM writes its own categorized list back
-    // (recognisable by the id="ui_browser_list_item__…" elements it uses),
-    // immediately replace it with our hint or active suggestion list.
+    // MutationObserver: restore our content if RYM overwrites the container.
     const container = getContainer();
     if (container) {
       new MutationObserver(function () {
         if (container.querySelector('[id^="ui_browser_list_item__"]')) {
-          log('  RYM overwrote container, restoring our state');
-          if (currentCmd !== null) {
+          if (currentCmd !== null || suggestions.length) {
             render();
           } else {
             renderHint();
@@ -395,14 +444,10 @@
   }
 
   if (!tryMount()) {
-    log('input not found yet, watching for it');
     const obs = new MutationObserver(function () {
-      if (tryMount()) {
-        log('input found via MutationObserver, disconnecting');
-        obs.disconnect();
-      }
+      if (tryMount()) obs.disconnect();
     });
     obs.observe(document.documentElement, { childList: true, subtree: true });
-    setTimeout(function () { obs.disconnect(); log('MutationObserver timed out'); }, 15000);
+    setTimeout(function () { obs.disconnect(); }, 15000);
   }
 })();
