@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         RYM Chart Prefix Commands
 // @namespace    http://tampermonkey.net/
-// @version      2.0
-// @description  Always-on genre/descriptor autocomplete for RYM charts. Ctrl+1 genre/desc · Ctrl+2 influence · Ctrl+3 either · Ctrl+` exclude. Also supports +g/-g/+i/-i/+gi/-gi/+d/-d prefix mode.
+// @version      2.1
+// @description  Always-on genre/descriptor autocomplete for RYM charts. Ctrl+1/2/3 first genre · Ctrl+D first descriptor · Shift = exclude. Ctrl+` toggles exclude mode. Also supports +g/-g/+i/-i/+gi/-gi/+d/-d prefix mode.
 // @author       Helena S.
 // @match        https://rateyourmusic.com/charts/*
 // @match        http://rateyourmusic.com/charts/*
@@ -90,6 +90,13 @@
     return null;
   }
 
+  // Returns the first suggestion of the given component type ('genre' or 'descriptor'), or null.
+  function findFirstOfType(component) {
+    return suggestions.find(function (s) {
+      return (s.component || (s.path || '').split('/')[0]) === component;
+    }) || null;
+  }
+
   function applyItem(ft, item) {
     const name = item.display_name || item.name || '';
     const itemId = item.assoc_id != null
@@ -129,8 +136,8 @@
         <div class="ui_browser_list_item_category_title">Chart filter shortcuts</div>
         <div class="ui_browser_list_item_category_description">
           Type to search &nbsp;·&nbsp;
-          ^1 genre/desc &nbsp;·&nbsp; ^2 influence &nbsp;·&nbsp; ^3 either &nbsp;·&nbsp; ^\` exclude<br>
-          Prefix mode: +g −g &nbsp;+i −i &nbsp;+gi −gi &nbsp;+d −d
+          ^1/2/3 top genre &nbsp;·&nbsp; ^D top descriptor &nbsp;·&nbsp; +Shift = exclude<br>
+          ^\` toggle exclude mode &nbsp;·&nbsp; Prefix: +g −g &nbsp;+i −i &nbsp;+gi −gi &nbsp;+d −d
         </div>
       </div>`;
   }
@@ -183,8 +190,8 @@
       ? ' <span style="color:var(--color-primary,#c0392b);font-weight:bold;">[EXCL]</span>'
       : '';
     let html = `<div class="ui_browser_list_item ui_browser_list_item_category">
-      <div class="ui_browser_list_item_category_title">^1 genre/desc &nbsp;·&nbsp; ^2 influence &nbsp;·&nbsp; ^3 either${exclHtml}</div>
-      <div class="ui_browser_list_item_category_description">Tab to cycle &nbsp;·&nbsp; ^\` toggle exclude</div>
+      <div class="ui_browser_list_item_category_title">^1/2/3 top genre &nbsp;·&nbsp; ^D top descriptor &nbsp;·&nbsp; +Shift = exclude${exclHtml}</div>
+      <div class="ui_browser_list_item_category_description">Tab to cycle &nbsp;·&nbsp; ^\` toggle exclude mode</div>
     </div>`;
     suggestions.forEach(function (s, i) {
       const name = s.display_name || s.name || '';
@@ -301,14 +308,27 @@
       return;
     }
 
-    // ^1 / ^2 / ^3 — apply highlighted suggestion
+    // ^D / ^Shift+D — apply first descriptor in suggestions
+    if (e.ctrlKey && e.key.toLowerCase() === 'd') {
+      if (!suggestions.length) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const item = findFirstOfType('descriptor');
+      if (!item) return;
+      const ft = (e.shiftKey || excludeMode) ? 'descriptor_exclude' : 'descriptor_include';
+      applyItem(ft, item);
+      resetInput();
+      return;
+    }
+
+    // ^1 / ^2 / ^3 / ^Shift+1/2/3 — apply first genre in suggestions
     if (e.ctrlKey && (e.key === '1' || e.key === '2' || e.key === '3')) {
       if (!suggestions.length) return;
       e.preventDefault();
       e.stopPropagation();
-      const item = suggestions[activeIndex];
-      const component = item.component || (item.path || '').split('/')[0];
-      const ft = filterTypeFor(component, parseInt(e.key), excludeMode);
+      const item = findFirstOfType('genre');
+      if (!item) return;
+      const ft = filterTypeFor('genre', parseInt(e.key), e.shiftKey || excludeMode);
       if (!ft) return;
       applyItem(ft, item);
       resetInput();
