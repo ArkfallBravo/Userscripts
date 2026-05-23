@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         RYM Release Chart Button
 // @namespace    http://tampermonkey.net/
-// @version      1.2
+// @version      1.3
 // @description  Adds a button at the end of the main info section on release pages that opens a custom RYM chart with the release's genres, influences, and descriptors pre-set.
 // @author       Helena S.
 // @match        https://rateyourmusic.com/release/*
@@ -35,10 +35,11 @@
     return slugs;
   }
 
+  // Returns ALL descriptors (unsliced); callers slice as needed.
   function collectDescriptors() {
     const span = document.querySelector('span.release_pri_descriptors');
     if (!span || !span.textContent.trim()) return [];
-    return span.textContent.split(',').map(function (s) { return slugify(s); }).filter(Boolean).slice(0, 8);
+    return span.textContent.split(',').map(function (s) { return slugify(s); }).filter(Boolean);
   }
 
   function buildChartUrl(genres, influences, descriptors) {
@@ -48,6 +49,211 @@
     if (descriptors.length) parts.push('d:all,' + descriptors.join(','));
     return 'https://rateyourmusic.com/charts/top/album,ep,mixtape,djmix/all-time/' + parts.join('/') + '/excl:ratings/';
   }
+
+  // ── Descriptor category filter ─────────────────────────────────────────────
+
+  const DS_EXCL_KEY = 'rym-rcb-excluded-desc-cats';
+  let excludedCategories = new Set(
+    (function () { try { return JSON.parse(localStorage.getItem(DS_EXCL_KEY) || '[]'); } catch (_) { return []; } })()
+  );
+  let descriptorCategoryMap = null; // Map<string, string[]>  category name → descriptor slugs
+  let categoryFetchPromise = null;
+
+  function saveExcludedCategories() {
+    try { localStorage.setItem(DS_EXCL_KEY, JSON.stringify([...excludedCategories])); } catch (_) {}
+  }
+
+  function fetchDescriptorCategoryMap() {
+    if (descriptorCategoryMap) return Promise.resolve(descriptorCategoryMap);
+    if (categoryFetchPromise) return categoryFetchPromise;
+    categoryFetchPromise = fetch('https://rateyourmusic.com/music_descriptor/', { credentials: 'include' })
+      .then(function (r) { return r.text(); })
+      .then(function (html) {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const map = new Map();
+
+        // Each parent descriptor is bold: <b><a class="genre" href="/music_descriptor/SLUG/">Name</a></b>
+        // All children (including nested sub-parents) are a.genre links inside the same container div.
+        // Descriptor hrefs use + for spaces; slugify to match what collectDescriptors() produces.
+        function normalizeSlug(href) {
+          const m = (href || '').match(/\/music_descriptor\/([^/?#]+)/);
+          if (!m) return null;
+          return slugify(decodeURIComponent(m[1].replace(/\+/g, ' ')));
+        }
+
+        doc.querySelectorAll('b > a.genre[href*="/music_descriptor/"]').forEach(function (parentLink) {
+          const catName = parentLink.textContent.trim();
+          const container = parentLink.closest('div');
+          if (!container) return;
+          const slugs = [];
+          container.querySelectorAll('a.genre[href*="/music_descriptor/"]').forEach(function (a) {
+            const s = normalizeSlug(a.getAttribute('href'));
+            if (s) slugs.push(s);
+          });
+          if (slugs.length > 0) map.set(catName, slugs);
+        });
+
+        descriptorCategoryMap = map;
+        return map;
+      })
+      .catch(function (e) {
+        console.error('[rym-rcb] fetchDescriptorCategoryMap failed:', e);
+        descriptorCategoryMap = new Map();
+        return descriptorCategoryMap;
+      });
+    return categoryFetchPromise;
+  }
+
+  // Filter descriptors by excluded categories, then return up to 8.
+  function filterAndSlice(descriptors) {
+    if (!descriptorCategoryMap || excludedCategories.size === 0) return descriptors.slice(0, 8);
+    const excludedSlugs = new Set();
+    excludedCategories.forEach(function (cat) {
+      const slugs = descriptorCategoryMap.get(cat);
+      if (slugs) slugs.forEach(function (s) { excludedSlugs.add(s); });
+    });
+    return descriptors.filter(function (d) { return !excludedSlugs.has(d); }).slice(0, 8);
+  }
+
+  // ── Button helpers ─────────────────────────────────────────────────────────
+
+  function makeBtn(label, url) {
+    const btn = document.createElement('div');
+    btn.className = 'more_btn';
+    btn.textContent = label;
+    btn.style.fontSize = '12px';
+    btn.style.lineHeight = '27.6px';
+    btn.onclick = function () { window.open(url, '_blank'); };
+    return btn;
+  }
+
+  function makeAsyncBtn(label, onClick) {
+    const btn = document.createElement('div');
+    btn.className = 'more_btn';
+    btn.textContent = label;
+    btn.style.fontSize = '12px';
+    btn.style.lineHeight = '27.6px';
+    btn.onclick = async function () {
+      btn.textContent = '…';
+      btn.style.pointerEvents = 'none';
+      try {
+        await onClick();
+      } catch (e) {
+        console.error('[ebr-chart-btn]', e);
+        btn.textContent = 'Error';
+      } finally {
+        btn.textContent = label;
+        btn.style.pointerEvents = '';
+      }
+    };
+    return btn;
+  }
+
+  // ── Descriptor filter panel ────────────────────────────────────────────────
+
+  // Returns { gearBtn, panel }.
+  // gearBtn: a small ⚙ toggle button to append to the wrapper row.
+  // panel: a div to append to the td (below the wrapper); shows/hides on toggle.
+  function makeDescFilterPanel() {
+    // ⚙ gear toggle button
+    const gearBtn = document.createElement('div');
+    gearBtn.className = 'more_btn';
+    gearBtn.textContent = '⚙';
+    gearBtn.title = 'Filter descriptor categories';
+    gearBtn.style.cssText = 'font-size:12px; line-height:27.6px; cursor:pointer;';
+
+    // Panel that appears below the button row
+    const panel = document.createElement('div');
+    panel.style.cssText = [
+      'display:none',
+      'flex-wrap:wrap',
+      'gap:4px',
+      'padding:4px 2px 6px',
+      'align-items:center',
+    ].join(';');
+
+    const loadingMsg = document.createElement('span');
+    loadingMsg.style.cssText = 'font-size:11px; opacity:0.6;';
+    loadingMsg.textContent = 'Loading categories…';
+    panel.appendChild(loadingMsg);
+
+    let populated = false;
+
+    function populatePanel(map) {
+      if (populated) return;
+      populated = true;
+      panel.removeChild(loadingMsg);
+
+      if (map.size === 0) {
+        const msg = document.createElement('span');
+        msg.style.cssText = 'font-size:11px; opacity:0.6;';
+        msg.textContent = 'Could not load descriptor categories.';
+        panel.appendChild(msg);
+        return;
+      }
+
+      map.forEach(function (_, catName) {
+        const chip = document.createElement('span');
+        chip.style.cssText = [
+          'display:inline-flex',
+          'align-items:center',
+          'gap:4px',
+          'cursor:pointer',
+          'font-size:11px',
+          'padding:1px 6px 1px 4px',
+          'border-radius:3px',
+          'user-select:none',
+          'border:1px solid currentColor',
+          'opacity:0.75',
+        ].join(';');
+
+        const circle = document.createElement('span');
+        circle.style.cssText = [
+          'display:inline-block',
+          'width:8px',
+          'height:8px',
+          'border-radius:50%',
+          'flex-shrink:0',
+          'transition:background 0.1s',
+        ].join(';');
+
+        function refresh() {
+          const excluded = excludedCategories.has(catName);
+          circle.style.background = excluded ? '#c0392b' : 'transparent';
+          circle.style.border = excluded ? '1px solid #c0392b' : '1px solid currentColor';
+          chip.style.opacity = excluded ? '1' : '0.65';
+        }
+        refresh();
+
+        chip.appendChild(circle);
+        chip.appendChild(document.createTextNode(catName));
+        chip.addEventListener('click', function () {
+          if (excludedCategories.has(catName)) {
+            excludedCategories.delete(catName);
+          } else {
+            excludedCategories.add(catName);
+          }
+          saveExcludedCategories();
+          refresh();
+        });
+
+        panel.appendChild(chip);
+      });
+    }
+
+    let open = false;
+    gearBtn.addEventListener('click', function () {
+      open = !open;
+      panel.style.display = open ? 'flex' : 'none';
+      if (open) {
+        fetchDescriptorCategoryMap().then(populatePanel);
+      }
+    });
+
+    return { gearBtn: gearBtn, panel: panel };
+  }
+
+  // ── Album ID / parent genre helpers (unchanged) ────────────────────────────
 
   function getAlbumId() {
     const link = document.querySelector('a[href*="rgenre/set"]');
@@ -60,8 +266,6 @@
     return null;
   }
 
-  // Loads the rgenre/set page in a hidden same-origin iframe so its JS runs and
-  // populates the genre rows, then reads parent genres from the rendered DOM.
   function loadGenreSetInFrame(albumId) {
     return new Promise(function (resolve, reject) {
       const iframe = document.createElement('iframe');
@@ -71,12 +275,10 @@
       let settled = false;
       const finish = function (fn) { if (settled) return; settled = true; fn(); };
 
-      // Poll the iframe document until genre rows appear (or timeout)
       const poll = setInterval(function () {
         try {
           const doc = iframe.contentDocument;
           if (!doc) return;
-          // Found rendered genre rows: each `a.genre` lives in a td alongside ⤷ <p>
           const links = doc.querySelectorAll('a.genre[href*="/genre/"]');
           if (links.length > 0) {
             finish(function () {
@@ -111,7 +313,6 @@
     const primarySlugs      = new Set();
     const influenceSlugs    = new Set();
 
-    // Each genre entry: <div><a class="genre" href="/genre/SLUG/">Name</a></div><p>⤷ Parent</p>
     doc.querySelectorAll('a.genre[href*="/genre/"]').forEach(function (a) {
       const m = (a.getAttribute('href') || '').match(/\/genre\/([^/]+)\//);
       if (!m) return;
@@ -122,7 +323,6 @@
                    : null;
       if (!target) return;
 
-      // The ⤷ paragraph is the next sibling of the genre's containing div
       const containerDiv = a.parentElement;
       if (!containerDiv) return;
       const next = containerDiv.nextElementSibling;
@@ -141,37 +341,7 @@
     };
   }
 
-  function makeBtn(label, url) {
-    const btn = document.createElement('div');
-    btn.className = 'more_btn';
-    btn.textContent = label;
-    btn.style.fontSize = '12px';
-    btn.style.lineHeight = '27.6px';
-    btn.onclick = function () { window.open(url, '_blank'); };
-    return btn;
-  }
-
-  function makeAsyncBtn(label, onClick) {
-    const btn = document.createElement('div');
-    btn.className = 'more_btn';
-    btn.textContent = label;
-    btn.style.fontSize = '12px';
-    btn.style.lineHeight = '27.6px';
-    btn.onclick = async function () {
-      btn.textContent = '…';
-      btn.style.pointerEvents = 'none';
-      try {
-        await onClick();
-      } catch (e) {
-        console.error('[ebr-chart-btn]', e);
-        btn.textContent = 'Error';
-      } finally {
-        btn.textContent = label;
-        btn.style.pointerEvents = '';
-      }
-    };
-    return btn;
-  }
+  // ── Main ───────────────────────────────────────────────────────────────────
 
   function addButton() {
     const table = document.querySelector('table.album_info');
@@ -179,18 +349,30 @@
 
     const genres      = collectGenres();
     const influences  = collectInfluences();
-    const descriptors = collectDescriptors();
+    const descriptors = collectDescriptors(); // all descriptors, unsliced
 
     if (!genres.length && !influences.length && !descriptors.length) return;
 
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'display:flex; flex-direction:row; flex-wrap:wrap;';
-    const firstBtn = makeBtn('Genres & Descriptors', buildChartUrl(genres, influences, descriptors));
+
+    // "Genres & Descriptors" — uses top 8 descriptors unfiltered
+    const firstBtn = makeBtn('Genres & Descriptors', buildChartUrl(genres, influences, descriptors.slice(0, 8)));
     firstBtn.style.paddingLeft = '0.8em';
     firstBtn.style.marginLeft = '0';
     wrapper.appendChild(firstBtn);
-    wrapper.appendChild(makeBtn('Just Genres',      buildChartUrl(genres, influences, [])));
-    wrapper.appendChild(makeBtn('Just Descriptors', buildChartUrl([], [], descriptors)));
+
+    wrapper.appendChild(makeBtn('Just Genres', buildChartUrl(genres, influences, [])));
+
+    // "Just Descriptors" — async so it can apply the category filter
+    const { gearBtn, panel } = makeDescFilterPanel();
+    wrapper.appendChild(makeAsyncBtn('Just Descriptors', async function () {
+      const map = await fetchDescriptorCategoryMap(); // ensure map is ready
+      void map; // filterAndSlice reads the module-level descriptorCategoryMap
+      const filtered = filterAndSlice(descriptors);
+      window.open(buildChartUrl([], [], filtered), '_blank');
+    }));
+    wrapper.appendChild(gearBtn);
 
     if (genres.length || influences.length) {
       wrapper.appendChild(makeAsyncBtn('Parent Genres', async function () {
@@ -202,6 +384,7 @@
 
     const td = document.createElement('td');
     td.appendChild(wrapper);
+    td.appendChild(panel); // filter panel appears below the button row
 
     const th = document.createElement('th');
     th.className = 'info_hdr';
