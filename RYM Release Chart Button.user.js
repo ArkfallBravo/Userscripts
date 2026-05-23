@@ -56,7 +56,8 @@
   let excludedCategories = new Set(
     (function () { try { return JSON.parse(localStorage.getItem(DS_EXCL_KEY) || '[]'); } catch (_) { return []; } })()
   );
-  let descriptorCategoryMap = null; // Map<string, string[]>  category name → descriptor slugs
+  let descriptorCategoryMap = null;  // Map<string, string[]>  category name → descriptor slugs
+  let topLevelCategories = [];       // names of categories not nested inside another parent
   let categoryFetchPromise = null;
 
   function saveExcludedCategories() {
@@ -90,7 +91,11 @@
             const s = normalizeSlug(a.getAttribute('href'));
             if (s) slugs.push(s);
           });
-          if (slugs.length > 0) map.set(catName, slugs);
+          if (slugs.length > 0) {
+            map.set(catName, slugs);
+            // Top-level = not nested inside another parent's blockquote
+            if (!parentLink.closest('blockquote')) topLevelCategories.push(catName);
+          }
         });
 
         descriptorCategoryMap = map;
@@ -184,7 +189,7 @@
       populated = true;
       panel.removeChild(loadingMsg);
 
-      if (map.size === 0) {
+      if (map.size === 0 || topLevelCategories.length === 0) {
         const msg = document.createElement('span');
         msg.style.cssText = 'font-size:11px; opacity:0.6;';
         msg.textContent = 'Could not load descriptor categories.';
@@ -192,7 +197,7 @@
         return;
       }
 
-      map.forEach(function (_, catName) {
+      topLevelCategories.forEach(function (catName) {
         const chip = document.createElement('span');
         chip.style.cssText = [
           'display:inline-flex',
