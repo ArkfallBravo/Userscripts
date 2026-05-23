@@ -241,6 +241,11 @@
     if (list) list.style.display = 'block';
   }
 
+  function hideList() {
+    const list = document.getElementById(LIST_ID);
+    if (list) list.style.display = 'none';
+  }
+
   function leavePrefixMode() {
     currentCmd = null;
     suggestions = [];
@@ -403,6 +408,7 @@
 
     const originalBlur = input.onblur;
     input.onblur = function (event) {
+      hideList();
       if (currentCmd !== null || suggestions.length) return;
       if (originalBlur) originalBlur.call(this, event);
     };
