@@ -322,13 +322,15 @@
     }
 
     // ^1 / ^2 / ^3 / ^Shift+1/2/3 — apply first genre in suggestions
-    if (e.ctrlKey && (e.key === '1' || e.key === '2' || e.key === '3')) {
+    // Use e.code because Shift+1 produces e.key === '!' on US layouts.
+    const digitMatch = e.ctrlKey && /^Digit([123])$/.exec(e.code || '');
+    if (digitMatch) {
       if (!suggestions.length) return;
       e.preventDefault();
       e.stopPropagation();
       const item = findFirstOfType('genre');
       if (!item) return;
-      const ft = filterTypeFor('genre', parseInt(e.key), e.shiftKey || excludeMode);
+      const ft = filterTypeFor('genre', parseInt(digitMatch[1]), e.shiftKey || excludeMode);
       if (!ft) return;
       applyItem(ft, item);
       resetInput();
