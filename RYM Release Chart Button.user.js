@@ -38,7 +38,7 @@
   function collectDescriptors() {
     const span = document.querySelector('span.release_pri_descriptors');
     if (!span || !span.textContent.trim()) return [];
-    return span.textContent.split(',').map(function (s) { return slugify(s); }).filter(Boolean);
+    return span.textContent.split(',').map(function (s) { return slugify(s); }).filter(Boolean).slice(0, 8);
   }
 
   function buildChartUrl(genres, influences, descriptors) {
