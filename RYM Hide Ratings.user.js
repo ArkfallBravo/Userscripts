@@ -209,13 +209,8 @@ const getProfileHideable = function getProfileHideable() {
 
   const releases = document.querySelectorAll('.disco_release, ul.films > li');
   releases.forEach((release) => {
-    const rating = release.querySelector('.disco_cat_inner');
     const releaseAvg = release.querySelector('.disco_avg_rating');
-    if (!rating || !parseFloat(rating.innerText)) {
-      hideable.push(releaseAvg);
-    } else {
-      releaseAvg.classList.add('tm-visible');
-    }
+    if (releaseAvg) hideable.push(releaseAvg);
   });
 
   return hideable;
