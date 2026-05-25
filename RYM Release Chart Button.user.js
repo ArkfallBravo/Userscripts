@@ -207,124 +207,33 @@
     return btn;
   }
 
-  // ── Descriptor filter panel ────────────────────────────────────────────────
+  // ── Combined chart settings panel (always visible) ────────────────────────
 
-  // Returns { gearBtn, panel }.
-  // gearBtn: a small ⚙ toggle button to append to the wrapper row.
-  // panel: a div to append to the td (below the wrapper); shows/hides on toggle.
-  function makeDescFilterPanel() {
-    // ⚙ gear toggle button
-    const gearBtn = document.createElement('div');
-    gearBtn.className = 'more_btn';
-    gearBtn.textContent = '⚙';
-    gearBtn.title = 'Filter descriptor categories';
-    gearBtn.style.cssText = 'font-size:12px; line-height:27.6px; cursor:pointer;';
-
-    // Panel that appears below the button row
+  function makeChartSettingsPanel() {
     const panel = document.createElement('div');
-    panel.style.cssText = [
-      'display:none',
-      'flex-wrap:wrap',
-      'gap:4px',
-      'padding:4px 2px 6px',
-      'align-items:center',
-    ].join(';');
+    panel.style.cssText = 'padding:4px 2px 6px;';
 
-    const loadingMsg = document.createElement('span');
-    loadingMsg.style.cssText = 'font-size:11px; opacity:0.6;';
-    loadingMsg.textContent = 'Loading categories…';
-    panel.appendChild(loadingMsg);
+    // One shared grid — all rows share the same label column width.
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid; grid-template-columns:max-content 1fr; column-gap:4px; row-gap:2px;';
+    panel.appendChild(grid);
 
-    let populated = false;
-
-    function populatePanel(map) {
-      if (populated) return;
-      populated = true;
-      panel.removeChild(loadingMsg);
-
-      if (map.size === 0 || topLevelCategories.length === 0) {
-        const msg = document.createElement('span');
-        msg.style.cssText = 'font-size:11px; opacity:0.6;';
-        msg.textContent = 'Could not load descriptor categories.';
-        panel.appendChild(msg);
-        return;
-      }
-
-      topLevelCategories.forEach(function (catName) {
-        const chip = document.createElement('span');
-        chip.style.cssText = [
-          'display:inline-flex',
-          'align-items:center',
-          'gap:4px',
-          'cursor:pointer',
-          'font-size:11px',
-          'padding:1px 6px 1px 4px',
-          'border-radius:3px',
-          'user-select:none',
-          'border:1px solid currentColor',
-          'opacity:0.75',
-        ].join(';');
-
-        const circle = document.createElement('span');
-        circle.style.cssText = [
-          'display:inline-block',
-          'width:8px',
-          'height:8px',
-          'border-radius:50%',
-          'flex-shrink:0',
-          'transition:background 0.1s',
-        ].join(';');
-
-        function refresh() {
-          const excluded = excludedCategories.has(catName);
-          circle.style.background = excluded ? '#c0392b' : 'transparent';
-          circle.style.border = excluded ? '1px solid #c0392b' : '1px solid currentColor';
-          chip.style.opacity = excluded ? '1' : '0.65';
-        }
-        refresh();
-
-        chip.appendChild(circle);
-        chip.appendChild(document.createTextNode(catName));
-        chip.addEventListener('click', function () {
-          if (excludedCategories.has(catName)) {
-            excludedCategories.delete(catName);
-          } else {
-            excludedCategories.add(catName);
-          }
-          saveExcludedCategories();
-          refresh();
-        });
-
-        panel.appendChild(chip);
-      });
+    function labelCell(text) {
+      const el = document.createElement('div');
+      el.style.cssText = 'display:flex; align-items:flex-start; padding-top:2px; font-size:11px; opacity:0.55; white-space:nowrap;';
+      el.textContent = text;
+      return el;
     }
 
-    let open = false;
-    gearBtn.addEventListener('click', function () {
-      open = !open;
-      panel.style.display = open ? 'flex' : 'none';
-      if (open) {
-        fetchDescriptorCategoryMap().then(populatePanel);
-      }
-    });
+    function bubbleCell(chips) {
+      const el = document.createElement('div');
+      el.style.cssText = 'display:flex; align-items:center; gap:4px; flex-wrap:wrap;';
+      chips.forEach(function (c) { el.appendChild(c); });
+      return el;
+    }
 
-    return { gearBtn: gearBtn, panel: panel };
-  }
-
-  // ── Genre filter panel ─────────────────────────────────────────────────────
-
-  function makeGenreFilterPanel() {
-    const gearBtn = document.createElement('div');
-    gearBtn.className = 'more_btn';
-    gearBtn.textContent = '⚙';
-    gearBtn.title = 'Configure genre/influence chart settings';
-    gearBtn.style.cssText = 'font-size:12px; line-height:27.6px; cursor:pointer;';
-
-    const panel = document.createElement('div');
-    panel.style.cssText = 'display:none; padding:4px 2px 6px;';
-
-    // Single independently-togglable bubble — styled to match descriptor chips.
-    function makeToggle(label, getVal, setVal) {
+    // Genre toggle chip (currentColor fill when active).
+    function makeGenreToggle(label, getVal, setVal) {
       const chip = document.createElement('span');
       chip.style.cssText = [
         'display:inline-flex', 'align-items:center', 'gap:4px',
@@ -332,78 +241,97 @@
         'border-radius:3px', 'user-select:none', 'border:1px solid currentColor',
         'opacity:0.65', 'transition:opacity 0.1s',
       ].join(';');
-
       const circle = document.createElement('span');
-      circle.style.cssText = [
-        'display:inline-block', 'width:8px', 'height:8px',
-        'border-radius:50%', 'flex-shrink:0', 'transition:background 0.1s',
-      ].join(';');
-
+      circle.style.cssText = 'display:inline-block; width:8px; height:8px; border-radius:50%; flex-shrink:0; transition:background 0.1s;';
       function refresh() {
         circle.style.background = getVal() ? 'currentColor' : 'transparent';
         circle.style.border     = '1px solid currentColor';
         chip.style.opacity      = getVal() ? '1' : '0.65';
       }
       refresh();
-
       chip.appendChild(circle);
       chip.appendChild(document.createTextNode(label));
+      chip.addEventListener('click', function () { setVal(!getVal()); saveGenreCfg(); refresh(); });
+      return chip;
+    }
+
+    // Descriptor category chip (red fill when excluded).
+    function makeDescChip(catName) {
+      const chip = document.createElement('span');
+      chip.style.cssText = [
+        'display:inline-flex', 'align-items:center', 'gap:4px',
+        'cursor:pointer', 'font-size:11px', 'padding:1px 6px 1px 4px',
+        'border-radius:3px', 'user-select:none', 'border:1px solid currentColor',
+        'opacity:0.65', 'transition:opacity 0.1s',
+      ].join(';');
+      const circle = document.createElement('span');
+      circle.style.cssText = 'display:inline-block; width:8px; height:8px; border-radius:50%; flex-shrink:0; transition:background 0.1s;';
+      function refresh() {
+        const excluded = excludedCategories.has(catName);
+        circle.style.background = excluded ? '#c0392b' : 'transparent';
+        circle.style.border     = excluded ? '1px solid #c0392b' : '1px solid currentColor';
+        chip.style.opacity      = excluded ? '1' : '0.65';
+      }
+      refresh();
+      chip.appendChild(circle);
+      chip.appendChild(document.createTextNode(catName));
       chip.addEventListener('click', function () {
-        setVal(!getVal());
-        saveGenreCfg();
+        if (excludedCategories.has(catName)) excludedCategories.delete(catName);
+        else excludedCategories.add(catName);
+        saveExcludedCategories();
         refresh();
       });
       return chip;
     }
 
-    // Each section uses a 2-column grid: fixed label col | flex bubble col.
-    // This guarantees the sub-row bubbles align exactly under the top-row bubbles.
-    function makeSection(labelText, row1Toggles, row2Toggles) {
-      const section = document.createElement('div');
-      section.style.cssText = 'display:grid; grid-template-columns:5.5em 1fr; column-gap:4px; row-gap:2px; margin-bottom:3px;';
+    // ── Genre rows ──
+    grid.appendChild(labelCell('Genres:'));
+    grid.appendChild(bubbleCell([
+      makeGenreToggle('genre',     function () { return genreCfg.genreToG;  }, function (v) { genreCfg.genreToG  = v; }),
+      makeGenreToggle('influence', function () { return genreCfg.genreToGe; }, function (v) { genreCfg.genreToGe = v; }),
+    ]));
+    grid.appendChild(labelCell(''));
+    grid.appendChild(bubbleCell([
+      makeGenreToggle('use parents for genre',     function () { return genreCfg.genreParToG;  }, function (v) { genreCfg.genreParToG  = v; }),
+      makeGenreToggle('use parents for influence', function () { return genreCfg.genreParToGe; }, function (v) { genreCfg.genreParToGe = v; }),
+    ]));
 
-      function cell(content, isLabel) {
-        const el = document.createElement('div');
-        el.style.cssText = 'display:flex; align-items:center; gap:4px; flex-wrap:wrap;';
-        if (isLabel) {
-          el.style.cssText += ' font-size:11px; opacity:0.55;';
-          el.textContent = content;
-        } else {
-          content.forEach(function (t) { el.appendChild(t); });
-        }
-        return el;
+    // ── Influences rows ──
+    grid.appendChild(labelCell('Influences:'));
+    grid.appendChild(bubbleCell([
+      makeGenreToggle('genre',     function () { return genreCfg.inflToG;  }, function (v) { genreCfg.inflToG  = v; }),
+      makeGenreToggle('influence', function () { return genreCfg.inflToGe; }, function (v) { genreCfg.inflToGe = v; }),
+    ]));
+    grid.appendChild(labelCell(''));
+    grid.appendChild(bubbleCell([
+      makeGenreToggle('use parents for genre',     function () { return genreCfg.inflParToG;  }, function (v) { genreCfg.inflParToG  = v; }),
+      makeGenreToggle('use parents for influence', function () { return genreCfg.inflParToGe; }, function (v) { genreCfg.inflParToGe = v; }),
+    ]));
+
+    // ── Descriptor rows (populated async) ──
+    const descLabelCell = labelCell('Exclude descriptor\ncategories:');
+    const descRow1 = bubbleCell([]);
+    const descRow2 = bubbleCell([]);
+
+    grid.appendChild(descLabelCell);
+    grid.appendChild(descRow1);
+    grid.appendChild(labelCell(''));
+    grid.appendChild(descRow2);
+
+    fetchDescriptorCategoryMap().then(function (map) {
+      if (map.size === 0 || topLevelCategories.length === 0) {
+        const msg = document.createElement('span');
+        msg.style.cssText = 'font-size:11px; opacity:0.6;';
+        msg.textContent = 'Could not load categories.';
+        descRow1.appendChild(msg);
+        return;
       }
-
-      section.appendChild(cell(labelText, true));
-      section.appendChild(cell(row1Toggles, false));
-      section.appendChild(cell('', true));   // empty label cell — keeps grid alignment
-      section.appendChild(cell(row2Toggles, false));
-      return section;
-    }
-
-    panel.appendChild(makeSection('Genres:', [
-      makeToggle('genre',     function () { return genreCfg.genreToG;  }, function (v) { genreCfg.genreToG  = v; }),
-      makeToggle('influence', function () { return genreCfg.genreToGe; }, function (v) { genreCfg.genreToGe = v; }),
-    ], [
-      makeToggle('use parents for genre',     function () { return genreCfg.genreParToG;  }, function (v) { genreCfg.genreParToG  = v; }),
-      makeToggle('use parents for influence', function () { return genreCfg.genreParToGe; }, function (v) { genreCfg.genreParToGe = v; }),
-    ]));
-
-    panel.appendChild(makeSection('Influences:', [
-      makeToggle('genre',     function () { return genreCfg.inflToG;  }, function (v) { genreCfg.inflToG  = v; }),
-      makeToggle('influence', function () { return genreCfg.inflToGe; }, function (v) { genreCfg.inflToGe = v; }),
-    ], [
-      makeToggle('use parents for genre',     function () { return genreCfg.inflParToG;  }, function (v) { genreCfg.inflParToG  = v; }),
-      makeToggle('use parents for influence', function () { return genreCfg.inflParToGe; }, function (v) { genreCfg.inflParToGe = v; }),
-    ]));
-
-    let open = false;
-    gearBtn.addEventListener('click', function () {
-      open = !open;
-      panel.style.display = open ? 'block' : 'none';
+      const half = Math.ceil(topLevelCategories.length / 2);
+      topLevelCategories.slice(0, half).forEach(function (cat) { descRow1.appendChild(makeDescChip(cat)); });
+      topLevelCategories.slice(half).forEach(function (cat)    { descRow2.appendChild(makeDescChip(cat)); });
     });
 
-    return { gearBtn: gearBtn, panel: panel };
+    return panel;
   }
 
   // ── Album ID / parent genre helpers (unchanged) ────────────────────────────
@@ -516,7 +444,6 @@
     wrapper.appendChild(firstBtn);
 
     // "Just Genres" — async so it can fetch parent genres if configured
-    const { gearBtn: genreGearBtn, panel: genrePanel } = makeGenreFilterPanel();
     wrapper.appendChild(makeAsyncBtn('Just Genres', async function () {
       const needParents = genreCfg.genreParToG || genreCfg.genreParToGe ||
                           genreCfg.inflParToG  || genreCfg.inflParToGe;
@@ -528,30 +455,18 @@
       }
       window.open(buildChartUrlWithGenreCfg(genres, influences, primarySlugs, influenceSlugs), '_blank');
     }));
-    wrapper.appendChild(genreGearBtn);
 
     // "Just Descriptors" — async so it can apply the category filter
-    const { gearBtn, panel } = makeDescFilterPanel();
     wrapper.appendChild(makeAsyncBtn('Just Descriptors', async function () {
-      const map = await fetchDescriptorCategoryMap(); // ensure map is ready
-      void map; // filterAndSlice reads the module-level descriptorCategoryMap
+      await fetchDescriptorCategoryMap(); // ensure map is ready
       const filtered = filterAndSlice(descriptors);
       window.open(buildChartUrl([], [], filtered), '_blank');
     }));
-    wrapper.appendChild(gearBtn);
 
-    if (genres.length || influences.length) {
-      wrapper.appendChild(makeAsyncBtn('Parent Genres', async function () {
-        const { primarySlugs, influenceSlugs } = await fetchParentGenres();
-        const url = buildChartUrl(primarySlugs, influenceSlugs, []);
-        window.open(url, '_blank');
-      }));
-    }
 
     const td = document.createElement('td');
     td.appendChild(wrapper);
-    td.appendChild(genrePanel); // genre config panel
-    td.appendChild(panel);      // descriptor filter panel
+    td.appendChild(makeChartSettingsPanel());
 
     const th = document.createElement('th');
     th.className = 'info_hdr';
