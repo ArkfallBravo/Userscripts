@@ -181,6 +181,7 @@
     btn.textContent = label;
     btn.style.fontSize = '12px';
     btn.style.lineHeight = '27.6px';
+    btn.style.padding = '0 0.5em';
     btn.onclick = function () { window.open(url, '_blank'); };
     return btn;
   }
@@ -191,6 +192,7 @@
     btn.textContent = label;
     btn.style.fontSize = '12px';
     btn.style.lineHeight = '27.6px';
+    btn.style.padding = '0 0.5em';
     btn.onclick = async function () {
       btn.textContent = '…';
       btn.style.pointerEvents = 'none';
@@ -310,6 +312,7 @@
 
     // ── Descriptor rows (populated async) ──
     const descLabelCell = labelCell('Exclude descriptor\ncategories:');
+    descLabelCell.style.whiteSpace = 'pre-line';
     const descRow1 = bubbleCell([]);
     const descRow2 = bubbleCell([]);
 
@@ -463,10 +466,22 @@
       window.open(buildChartUrl([], [], filtered), '_blank');
     }));
 
+    // Settings toggle button + panel
+    const settingsPanel = makeChartSettingsPanel();
+    settingsPanel.style.display = 'none';
+    const settingsBtn = document.createElement('div');
+    settingsBtn.className = 'more_btn';
+    settingsBtn.textContent = '⚙';
+    settingsBtn.style.cssText = 'font-size:12px; line-height:27.6px; cursor:pointer; padding:0 0.6em;';
+    settingsBtn.addEventListener('click', function () {
+      const open = settingsPanel.style.display !== 'none';
+      settingsPanel.style.display = open ? 'none' : 'block';
+    });
+    wrapper.appendChild(settingsBtn);
 
     const td = document.createElement('td');
     td.appendChild(wrapper);
-    td.appendChild(makeChartSettingsPanel());
+    td.appendChild(settingsPanel);
 
     const th = document.createElement('th');
     th.className = 'info_hdr';
