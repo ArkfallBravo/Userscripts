@@ -474,11 +474,14 @@
       const open = settingsPanel.style.display !== 'none';
       settingsPanel.style.display = open ? 'none' : 'block';
     });
-    wrapper.appendChild(settingsBtn);
 
     const td = document.createElement('td');
     td.appendChild(wrapper);
     td.appendChild(settingsPanel);
+
+    const tdGear = document.createElement('td');
+    tdGear.style.cssText = 'text-align:center; padding:0;';
+    tdGear.appendChild(settingsBtn);
 
     const th = document.createElement('th');
     th.className = 'info_hdr';
@@ -487,6 +490,7 @@
     const tr = document.createElement('tr');
     tr.appendChild(th);
     tr.appendChild(td);
+    tr.appendChild(tdGear);
 
     table.querySelector('tbody').appendChild(tr);
   }
