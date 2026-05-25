@@ -341,6 +341,7 @@
 
       function refresh() {
         circle.style.background = getVal() ? 'currentColor' : 'transparent';
+        circle.style.border     = '1px solid currentColor';
         chip.style.opacity      = getVal() ? '1' : '0.65';
       }
       refresh();
