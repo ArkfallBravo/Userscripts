@@ -179,9 +179,8 @@
     const btn = document.createElement('div');
     btn.className = 'more_btn';
     btn.textContent = label;
-    btn.style.fontSize = '12px';
     btn.style.lineHeight = '27.6px';
-    btn.style.padding = '0 0.5em';
+    btn.style.margin = '0';
     btn.onclick = function () { window.open(url, '_blank'); };
     return btn;
   }
@@ -190,9 +189,8 @@
     const btn = document.createElement('div');
     btn.className = 'more_btn';
     btn.textContent = label;
-    btn.style.fontSize = '12px';
     btn.style.lineHeight = '27.6px';
-    btn.style.padding = '0 0.5em';
+    btn.style.margin = '0';
     btn.onclick = async function () {
       btn.textContent = '…';
       btn.style.pointerEvents = 'none';
@@ -438,12 +436,11 @@
     if (!genres.length && !influences.length && !descriptors.length) return;
 
     const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'display:flex; flex-direction:row; flex-wrap:wrap;';
+    wrapper.style.cssText = 'display:flex; flex-direction:row; flex-wrap:wrap; gap:2px;';
 
     // "Genres & Descriptors" — uses top 8 descriptors unfiltered
     const firstBtn = makeBtn('Genres & Descriptors', buildChartUrl(genres, influences, descriptors.slice(0, 8)));
     firstBtn.style.paddingLeft = '0.8em';
-    firstBtn.style.marginLeft = '0';
     wrapper.appendChild(firstBtn);
 
     // "Just Genres" — async so it can fetch parent genres if configured
@@ -472,7 +469,7 @@
     const settingsBtn = document.createElement('div');
     settingsBtn.className = 'more_btn';
     settingsBtn.textContent = '⚙';
-    settingsBtn.style.cssText = 'font-size:12px; line-height:27.6px; cursor:pointer; padding:0 0.6em;';
+    settingsBtn.style.cssText = 'line-height:27.6px; cursor:pointer; margin:0;';
     settingsBtn.addEventListener('click', function () {
       const open = settingsPanel.style.display !== 'none';
       settingsPanel.style.display = open ? 'none' : 'block';
