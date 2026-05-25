@@ -323,21 +323,25 @@
     const panel = document.createElement('div');
     panel.style.cssText = 'display:none; padding:4px 2px 6px;';
 
-    // Single independently-togglable bubble.
+    // Single independently-togglable bubble — styled to match descriptor chips.
     function makeToggle(label, getVal, setVal) {
       const chip = document.createElement('span');
       chip.style.cssText = [
         'display:inline-flex', 'align-items:center', 'gap:4px',
         'cursor:pointer', 'font-size:11px', 'padding:1px 6px 1px 4px',
         'border-radius:3px', 'user-select:none', 'border:1px solid currentColor',
+        'opacity:0.65', 'transition:opacity 0.1s',
       ].join(';');
 
       const circle = document.createElement('span');
-      circle.style.cssText = 'display:inline-block; width:8px; height:8px; border-radius:50%; flex-shrink:0; transition:background 0.1s;';
+      circle.style.cssText = [
+        'display:inline-block', 'width:8px', 'height:8px',
+        'border-radius:50%', 'flex-shrink:0', 'transition:background 0.1s',
+      ].join(';');
 
       function refresh() {
         circle.style.background = getVal() ? 'currentColor' : 'transparent';
-        chip.style.opacity      = getVal() ? '1' : '0.5';
+        chip.style.opacity      = getVal() ? '1' : '0.65';
       }
       refresh();
 
@@ -351,28 +355,44 @@
       return chip;
     }
 
-    function makeRow(label, toggles) {
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex; align-items:center; gap:4px; margin:2px 0; flex-wrap:wrap;';
-      const lbl = document.createElement('span');
-      lbl.textContent = label;
-      lbl.style.cssText = 'font-size:11px; opacity:0.55; min-width:5.5em;';
-      row.appendChild(lbl);
-      toggles.forEach(function (t) { row.appendChild(t); });
-      return row;
+    // Each section uses a 2-column grid: fixed label col | flex bubble col.
+    // This guarantees the sub-row bubbles align exactly under the top-row bubbles.
+    function makeSection(labelText, row1Toggles, row2Toggles) {
+      const section = document.createElement('div');
+      section.style.cssText = 'display:grid; grid-template-columns:5.5em 1fr; column-gap:4px; row-gap:2px; margin-bottom:3px;';
+
+      function cell(content, isLabel) {
+        const el = document.createElement('div');
+        el.style.cssText = 'display:flex; align-items:center; gap:4px; flex-wrap:wrap;';
+        if (isLabel) {
+          el.style.cssText += ' font-size:11px; opacity:0.55;';
+          el.textContent = content;
+        } else {
+          content.forEach(function (t) { el.appendChild(t); });
+        }
+        return el;
+      }
+
+      section.appendChild(cell(labelText, true));
+      section.appendChild(cell(row1Toggles, false));
+      section.appendChild(cell('', true));   // empty label cell — keeps grid alignment
+      section.appendChild(cell(row2Toggles, false));
+      return section;
     }
 
-    panel.appendChild(makeRow('Genres:', [
-      makeToggle('genre',                  function () { return genreCfg.genreToG;    }, function (v) { genreCfg.genreToG    = v; }),
-      makeToggle('influence',              function () { return genreCfg.genreToGe;   }, function (v) { genreCfg.genreToGe   = v; }),
-      makeToggle('use parents for genre',  function () { return genreCfg.genreParToG; }, function (v) { genreCfg.genreParToG = v; }),
+    panel.appendChild(makeSection('Genres:', [
+      makeToggle('genre',     function () { return genreCfg.genreToG;  }, function (v) { genreCfg.genreToG  = v; }),
+      makeToggle('influence', function () { return genreCfg.genreToGe; }, function (v) { genreCfg.genreToGe = v; }),
+    ], [
+      makeToggle('use parents for genre',     function () { return genreCfg.genreParToG;  }, function (v) { genreCfg.genreParToG  = v; }),
       makeToggle('use parents for influence', function () { return genreCfg.genreParToGe; }, function (v) { genreCfg.genreParToGe = v; }),
     ]));
 
-    panel.appendChild(makeRow('Influences:', [
-      makeToggle('genre',                  function () { return genreCfg.inflToG;    }, function (v) { genreCfg.inflToG    = v; }),
-      makeToggle('influence',              function () { return genreCfg.inflToGe;   }, function (v) { genreCfg.inflToGe   = v; }),
-      makeToggle('use parents for genre',  function () { return genreCfg.inflParToG; }, function (v) { genreCfg.inflParToG = v; }),
+    panel.appendChild(makeSection('Influences:', [
+      makeToggle('genre',     function () { return genreCfg.inflToG;  }, function (v) { genreCfg.inflToG  = v; }),
+      makeToggle('influence', function () { return genreCfg.inflToGe; }, function (v) { genreCfg.inflToGe = v; }),
+    ], [
+      makeToggle('use parents for genre',     function () { return genreCfg.inflParToG;  }, function (v) { genreCfg.inflParToG  = v; }),
       makeToggle('use parents for influence', function () { return genreCfg.inflParToGe; }, function (v) { genreCfg.inflParToGe = v; }),
     ]));
 
