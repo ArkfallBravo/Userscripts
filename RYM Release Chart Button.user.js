@@ -121,13 +121,26 @@
   }
 
   // ── Genre config ───────────────────────────────────────────────────────────
+  //
+  // Each flag independently controls one contribution to the chart URL.
+  // "use parents" flags supersede the corresponding direct flag for their filter.
+  //
+  // Genres row  (source = release's primary genres):
+  //   genreToG      → genres directly into g:
+  //   genreToGe     → genres directly into ge:
+  //   genreParToG   → parent genres into g:   (overrides genreToG)
+  //   genreParToGe  → parent genres into ge:  (overrides genreToGe)
+  //
+  // Influences row  (source = release's secondary genres / influences):
+  //   inflToG       → influences directly into g:
+  //   inflToGe      → influences directly into ge:
+  //   inflParToG    → parent influences into g:   (overrides inflToG)
+  //   inflParToGe   → parent influences into ge:  (overrides inflToGe)
 
   const GENRE_CFG_KEY = 'rym-rcb-genre-cfg';
   const GENRE_CFG_DEFAULTS = {
-    genreAs:  'genre',      // 'genre' | 'influence' | 'either'
-    genreSrc: 'genre',      // 'genre' | 'parent'
-    inflAs:   'influence',  // 'genre' | 'influence' | 'either'
-    inflSrc:  'influence',  // 'influence' | 'parent'
+    genreToG: true,  genreToGe: false, genreParToG: false, genreParToGe: false,
+    inflToG:  false, inflToGe:  true,  inflParToG:  false, inflParToGe:  false,
   };
   let genreCfg = Object.assign({}, GENRE_CFG_DEFAULTS);
   try {
@@ -139,22 +152,24 @@
     try { localStorage.setItem(GENRE_CFG_KEY, JSON.stringify(genreCfg)); } catch (_) {}
   }
 
-  // Build chart URL respecting genre config settings.
-  // g: = primary genre filter  ge: = genre either (primary or influence filter)
-  function buildChartUrlWithGenreCfg(genreList, influenceList, descriptors) {
+  // Build chart URL from already-resolved genre/influence arrays + optional parent arrays.
+  // "use parents" flags supersede the corresponding direct flag.
+  function buildChartUrlWithGenreCfg(genres, influences, primarySlugs, influenceSlugs) {
+    const gItems = [];
+    if      (genreCfg.genreParToG) gItems.push(...primarySlugs);
+    else if (genreCfg.genreToG)    gItems.push(...genres);
+    if      (genreCfg.inflParToG)  gItems.push(...influenceSlugs);
+    else if (genreCfg.inflToG)     gItems.push(...influences);
+
+    const geItems = [];
+    if      (genreCfg.genreParToGe) geItems.push(...primarySlugs);
+    else if (genreCfg.genreToGe)    geItems.push(...genres);
+    if      (genreCfg.inflParToGe)  geItems.push(...influenceSlugs);
+    else if (genreCfg.inflToGe)     geItems.push(...influences);
+
     const parts = [];
-    function addItems(items, includeAs) {
-      if (!items.length) return;
-      if (includeAs === 'genre')      parts.push('g:all,'  + items.join(','));
-      else if (includeAs === 'influence') parts.push('ge:all,' + items.join(','));
-      else { // 'either' — add to both filters
-        parts.push('g:all,'  + items.join(','));
-        parts.push('ge:all,' + items.join(','));
-      }
-    }
-    addItems(genreList,     genreCfg.genreAs);
-    addItems(influenceList, genreCfg.inflAs);
-    if (descriptors.length) parts.push('d:all,' + descriptors.join(','));
+    if (gItems.length)  parts.push('g:all,'  + gItems.join(','));
+    if (geItems.length) parts.push('ge:all,' + geItems.join(','));
     return 'https://rateyourmusic.com/charts/top/album,ep,mixtape,djmix/all-time/' + parts.join('/') + '/excl:ratings/';
   }
 
@@ -308,91 +323,57 @@
     const panel = document.createElement('div');
     panel.style.cssText = 'display:none; padding:4px 2px 6px;';
 
-    // Creates a radio-style bubble group. Only one bubble selected at a time.
-    // options: [{value, label}], getValue/setValue operate on genreCfg.
-    function makeRadioGroup(options, getValue, setValue) {
-      const wrap = document.createElement('span');
-      wrap.style.cssText = 'display:inline-flex; gap:4px; align-items:center; flex-wrap:wrap;';
-      const refreshFns = [];
+    // Single independently-togglable bubble.
+    function makeToggle(label, getVal, setVal) {
+      const chip = document.createElement('span');
+      chip.style.cssText = [
+        'display:inline-flex', 'align-items:center', 'gap:4px',
+        'cursor:pointer', 'font-size:11px', 'padding:1px 6px 1px 4px',
+        'border-radius:3px', 'user-select:none', 'border:1px solid currentColor',
+      ].join(';');
 
-      options.forEach(function (opt) {
-        const chip = document.createElement('span');
-        chip.style.cssText = [
-          'display:inline-flex', 'align-items:center', 'gap:4px',
-          'cursor:pointer', 'font-size:11px', 'padding:1px 6px 1px 4px',
-          'border-radius:3px', 'user-select:none', 'border:1px solid currentColor',
-        ].join(';');
+      const circle = document.createElement('span');
+      circle.style.cssText = 'display:inline-block; width:8px; height:8px; border-radius:50%; flex-shrink:0; transition:background 0.1s;';
 
-        const circle = document.createElement('span');
-        circle.style.cssText = 'display:inline-block; width:8px; height:8px; border-radius:50%; flex-shrink:0; transition:background 0.1s;';
+      function refresh() {
+        circle.style.background = getVal() ? 'currentColor' : 'transparent';
+        chip.style.opacity      = getVal() ? '1' : '0.5';
+      }
+      refresh();
 
-        function refresh() {
-          const sel = getValue() === opt.value;
-          circle.style.background = sel ? 'currentColor' : 'transparent';
-          circle.style.border     = '1px solid currentColor';
-          chip.style.opacity      = sel ? '1' : '0.5';
-        }
+      chip.appendChild(circle);
+      chip.appendChild(document.createTextNode(label));
+      chip.addEventListener('click', function () {
+        setVal(!getVal());
+        saveGenreCfg();
         refresh();
-        refreshFns.push(refresh);
-
-        chip.appendChild(circle);
-        chip.appendChild(document.createTextNode(opt.label));
-        chip.addEventListener('click', function () {
-          setValue(opt.value);
-          saveGenreCfg();
-          refreshFns.forEach(function (r) { r(); });
-        });
-        wrap.appendChild(chip);
       });
-
-      return wrap;
+      return chip;
     }
 
-    function makeSep() {
-      const s = document.createElement('span');
-      s.textContent = '|';
-      s.style.cssText = 'opacity:0.25; font-size:11px; margin:0 2px;';
-      return s;
-    }
-
-    function makeRow(label, groups) {
+    function makeRow(label, toggles) {
       const row = document.createElement('div');
       row.style.cssText = 'display:flex; align-items:center; gap:4px; margin:2px 0; flex-wrap:wrap;';
       const lbl = document.createElement('span');
       lbl.textContent = label;
       lbl.style.cssText = 'font-size:11px; opacity:0.55; min-width:5.5em;';
       row.appendChild(lbl);
-      groups.forEach(function (g, i) {
-        if (i > 0) row.appendChild(makeSep());
-        row.appendChild(g);
-      });
+      toggles.forEach(function (t) { row.appendChild(t); });
       return row;
     }
 
-    const AS_OPTS = [
-      { value: 'genre',     label: 'genre' },
-      { value: 'influence', label: 'influence' },
-      { value: 'either',    label: 'either' },
-    ];
-
     panel.appendChild(makeRow('Genres:', [
-      makeRadioGroup(AS_OPTS,
-        function () { return genreCfg.genreAs; },
-        function (v) { genreCfg.genreAs = v; }),
-      makeRadioGroup(
-        [{ value: 'genre', label: 'genre' }, { value: 'parent', label: 'parent genre' }],
-        function () { return genreCfg.genreSrc; },
-        function (v) { genreCfg.genreSrc = v; }),
+      makeToggle('genre',                  function () { return genreCfg.genreToG;    }, function (v) { genreCfg.genreToG    = v; }),
+      makeToggle('influence',              function () { return genreCfg.genreToGe;   }, function (v) { genreCfg.genreToGe   = v; }),
+      makeToggle('use parents for genre',  function () { return genreCfg.genreParToG; }, function (v) { genreCfg.genreParToG = v; }),
+      makeToggle('use parents for influence', function () { return genreCfg.genreParToGe; }, function (v) { genreCfg.genreParToGe = v; }),
     ]));
 
     panel.appendChild(makeRow('Influences:', [
-      makeRadioGroup(AS_OPTS,
-        function () { return genreCfg.inflAs; },
-        function (v) { genreCfg.inflAs = v; }),
-      makeRadioGroup(
-        [{ value: 'influence', label: 'influence' }, { value: 'parent', label: 'parent influence' }],
-        function () { return genreCfg.inflSrc; },
-        function (v) { genreCfg.inflSrc = v; }),
+      makeToggle('genre',                  function () { return genreCfg.inflToG;    }, function (v) { genreCfg.inflToG    = v; }),
+      makeToggle('influence',              function () { return genreCfg.inflToGe;   }, function (v) { genreCfg.inflToGe   = v; }),
+      makeToggle('use parents for genre',  function () { return genreCfg.inflParToG; }, function (v) { genreCfg.inflParToG = v; }),
+      makeToggle('use parents for influence', function () { return genreCfg.inflParToGe; }, function (v) { genreCfg.inflParToGe = v; }),
     ]));
 
     let open = false;
@@ -516,14 +497,15 @@
     // "Just Genres" — async so it can fetch parent genres if configured
     const { gearBtn: genreGearBtn, panel: genrePanel } = makeGenreFilterPanel();
     wrapper.appendChild(makeAsyncBtn('Just Genres', async function () {
-      let genreList    = genres;
-      let influenceList = influences;
-      if (genreCfg.genreSrc === 'parent' || genreCfg.inflSrc === 'parent') {
-        const { primarySlugs, influenceSlugs } = await fetchParentGenres();
-        if (genreCfg.genreSrc === 'parent') genreList    = primarySlugs;
-        if (genreCfg.inflSrc  === 'parent') influenceList = influenceSlugs;
+      const needParents = genreCfg.genreParToG || genreCfg.genreParToGe ||
+                          genreCfg.inflParToG  || genreCfg.inflParToGe;
+      let primarySlugs = [], influenceSlugs = [];
+      if (needParents) {
+        const result = await fetchParentGenres();
+        primarySlugs  = result.primarySlugs;
+        influenceSlugs = result.influenceSlugs;
       }
-      window.open(buildChartUrlWithGenreCfg(genreList, influenceList, []), '_blank');
+      window.open(buildChartUrlWithGenreCfg(genres, influences, primarySlugs, influenceSlugs), '_blank');
     }));
     wrapper.appendChild(genreGearBtn);
 
