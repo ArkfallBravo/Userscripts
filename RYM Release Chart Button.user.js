@@ -64,6 +64,16 @@
     try { localStorage.setItem(DS_EXCL_KEY, JSON.stringify([...excludedCategories])); } catch (_) {}
   }
 
+  const DS_QTY_KEY = 'rym-rcb-desc-qty';
+  let descriptorQty = (function () {
+    const v = localStorage.getItem(DS_QTY_KEY);
+    return v === 'null' ? null : (Number(v) || 8);
+  })();
+
+  function saveDescriptorQty() {
+    try { localStorage.setItem(DS_QTY_KEY, String(descriptorQty)); } catch (_) {}
+  }
+
   function fetchDescriptorCategoryMap() {
     if (descriptorCategoryMap) return Promise.resolve(descriptorCategoryMap);
     if (categoryFetchPromise) return categoryFetchPromise;
@@ -109,15 +119,18 @@
     return categoryFetchPromise;
   }
 
-  // Filter descriptors by excluded categories, then return up to 8.
+  // Filter descriptors by excluded categories, then slice to the configured quantity.
   function filterAndSlice(descriptors) {
-    if (!descriptorCategoryMap || excludedCategories.size === 0) return descriptors.slice(0, 8);
-    const excludedSlugs = new Set();
-    excludedCategories.forEach(function (cat) {
-      const slugs = descriptorCategoryMap.get(cat);
-      if (slugs) slugs.forEach(function (s) { excludedSlugs.add(s); });
-    });
-    return descriptors.filter(function (d) { return !excludedSlugs.has(d); }).slice(0, 8);
+    let result = descriptors;
+    if (descriptorCategoryMap && excludedCategories.size > 0) {
+      const excludedSlugs = new Set();
+      excludedCategories.forEach(function (cat) {
+        const slugs = descriptorCategoryMap.get(cat);
+        if (slugs) slugs.forEach(function (s) { excludedSlugs.add(s); });
+      });
+      result = result.filter(function (d) { return !excludedSlugs.has(d); });
+    }
+    return descriptorQty === null ? result : result.slice(0, descriptorQty);
   }
 
   // ── Genre config ───────────────────────────────────────────────────────────
@@ -308,6 +321,35 @@
       makeGenreToggle('use parents for influence', function () { return genreCfg.inflParToGe; }, function (v) { genreCfg.inflParToGe = v; }),
     ]));
 
+    // Quantity radio chip — only one active at a time.
+    function makeQtyChip(label, value, allChips) {
+      const chip = document.createElement('span');
+      chip.style.cssText = [
+        'display:inline-flex', 'align-items:center', 'gap:4px',
+        'cursor:pointer', 'font-size:11px', 'padding:1px 6px 1px 4px',
+        'border-radius:3px', 'user-select:none', 'border:1px solid currentColor',
+        'opacity:0.65', 'transition:opacity 0.1s',
+      ].join(';');
+      const circle = document.createElement('span');
+      circle.style.cssText = 'display:inline-block; width:8px; height:8px; border-radius:50%; flex-shrink:0; transition:background 0.1s;';
+      function refresh() {
+        const active = descriptorQty === value;
+        circle.style.background = active ? 'currentColor' : 'transparent';
+        circle.style.border     = '1px solid currentColor';
+        chip.style.opacity      = active ? '1' : '0.65';
+      }
+      refresh();
+      chip.appendChild(circle);
+      chip.appendChild(document.createTextNode(label));
+      chip.addEventListener('click', function () {
+        descriptorQty = value;
+        saveDescriptorQty();
+        allChips.forEach(function (c) { c.refresh(); });
+      });
+      chip.refresh = refresh;
+      return chip;
+    }
+
     // ── Descriptor rows (populated async) ──
     const descLabelCell = labelCell('Exclude descriptor\ncategories:');
     descLabelCell.style.whiteSpace = 'pre-line';
@@ -331,6 +373,17 @@
       topLevelCategories.slice(0, half).forEach(function (cat) { descRow1.appendChild(makeDescChip(cat)); });
       topLevelCategories.slice(half).forEach(function (cat)    { descRow2.appendChild(makeDescChip(cat)); });
     });
+
+    // ── Descriptor quantity row ──
+    const qtyChips = [];
+    const chip8   = makeQtyChip('8',   8,    qtyChips);
+    const chip12  = makeQtyChip('12',  12,   qtyChips);
+    const chip16  = makeQtyChip('16',  16,   qtyChips);
+    const chipAll = makeQtyChip('all', null, qtyChips);
+    qtyChips.push(chip8, chip12, chip16, chipAll);
+
+    grid.appendChild(labelCell('Descriptor quantity:'));
+    grid.appendChild(bubbleCell([chip8, chip12, chip16, chipAll]));
 
     return panel;
   }
@@ -438,8 +491,11 @@
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'display:flex; flex-direction:row; flex-wrap:wrap; gap:2px;';
 
-    // "Genres & Descriptors" — uses top 8 descriptors unfiltered
-    const firstBtn = makeBtn('Genres & Descriptors', buildChartUrl(genres, influences, descriptors.slice(0, 8)));
+    // "Genres & Descriptors" — uses descriptorQty descriptors, unfiltered by category
+    const firstBtn = makeAsyncBtn('Genres & Descriptors', async function () {
+      const sliced = descriptorQty === null ? descriptors : descriptors.slice(0, descriptorQty);
+      window.open(buildChartUrl(genres, influences, sliced), '_blank');
+    });
     firstBtn.style.paddingLeft = '0.8em';
     wrapper.appendChild(firstBtn);
 
