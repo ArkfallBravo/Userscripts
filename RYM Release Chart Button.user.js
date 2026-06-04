@@ -286,6 +286,8 @@
         circle.style.background = excluded ? '#c0392b' : 'transparent';
         circle.style.border     = excluded ? '1px solid #c0392b' : '1px solid currentColor';
         chip.style.opacity      = excluded ? '1' : '0.65';
+        chip.style.color        = excluded ? '#c0392b' : '';
+        chip.style.border       = excluded ? '1px solid #c0392b' : '1px solid currentColor';
       }
       refresh();
       chip.appendChild(circle);
