@@ -67,7 +67,10 @@
   const DS_QTY_KEY = 'rym-rcb-desc-qty';
   let descriptorQty = (function () {
     const v = localStorage.getItem(DS_QTY_KEY);
-    return v === 'null' ? null : (Number(v) || 8);
+    if (v === null) return 8;       // not yet set → default
+    if (v === 'null') return null;  // "all"
+    const n = Number(v);
+    return isNaN(n) ? 8 : n;        // handles 0 (none), 8, 12, 16
   })();
 
   function saveDescriptorQty() {
@@ -167,7 +170,7 @@
 
   // Build chart URL from already-resolved genre/influence arrays + optional parent arrays.
   // "use parents" flags supersede the corresponding direct flag.
-  function buildChartUrlWithGenreCfg(genres, influences, primarySlugs, influenceSlugs) {
+  function buildChartUrlWithGenreCfg(genres, influences, primarySlugs, influenceSlugs, descriptors) {
     const gItems = [];
     if      (genreCfg.genreParToG) gItems.push(...primarySlugs);
     else if (genreCfg.genreToG)    gItems.push(...genres);
@@ -181,8 +184,9 @@
     else if (genreCfg.inflToGe)     geItems.push(...influences);
 
     const parts = [];
-    if (gItems.length)  parts.push('g:all,'  + gItems.join(','));
-    if (geItems.length) parts.push('ge:all,' + geItems.join(','));
+    if (gItems.length)                      parts.push('g:all,'  + gItems.join(','));
+    if (geItems.length)                     parts.push('ge:all,' + geItems.join(','));
+    if (descriptors && descriptors.length)  parts.push('d:all,'  + descriptors.join(','));
     return 'https://rateyourmusic.com/charts/top/album,ep,mixtape,djmix/all-time/' + parts.join('/') + '/excl:ratings/';
   }
 
@@ -193,7 +197,6 @@
     btn.className = 'more_btn';
     btn.textContent = label;
     btn.style.lineHeight = '27.6px';
-    btn.style.margin = '0';
     btn.onclick = function () { window.open(url, '_blank'); };
     return btn;
   }
@@ -203,7 +206,6 @@
     btn.className = 'more_btn';
     btn.textContent = label;
     btn.style.lineHeight = '27.6px';
-    btn.style.margin = '0';
     btn.onclick = async function () {
       btn.textContent = '…';
       btn.style.pointerEvents = 'none';
@@ -342,7 +344,7 @@
       chip.appendChild(circle);
       chip.appendChild(document.createTextNode(label));
       chip.addEventListener('click', function () {
-        descriptorQty = value;
+        descriptorQty = (descriptorQty === value) ? 0 : value;
         saveDescriptorQty();
         allChips.forEach(function (c) { c.refresh(); });
       });
@@ -489,35 +491,27 @@
     if (!genres.length && !influences.length && !descriptors.length) return;
 
     const wrapper = document.createElement('div');
-    wrapper.style.cssText = 'display:flex; flex-direction:row; flex-wrap:wrap; gap:2px;';
+    wrapper.style.cssText = 'display:flex; flex-direction:row; flex-wrap:wrap;';
 
-    // "Genres & Descriptors" — uses descriptorQty descriptors, unfiltered by category
-    const firstBtn = makeAsyncBtn('Genres & Descriptors', async function () {
-      const sliced = descriptorQty === null ? descriptors : descriptors.slice(0, descriptorQty);
-      window.open(buildChartUrl(genres, influences, sliced), '_blank');
-    });
-    firstBtn.style.paddingLeft = '0.8em';
-    wrapper.appendChild(firstBtn);
-
-    // "Just Genres" — async so it can fetch parent genres if configured
-    wrapper.appendChild(makeAsyncBtn('Just Genres', async function () {
+    // "Search" — combines genre config + descriptors (if qty > 0)
+    const searchBtn = makeAsyncBtn('Search', async function () {
       const needParents = genreCfg.genreParToG || genreCfg.genreParToGe ||
                           genreCfg.inflParToG  || genreCfg.inflParToGe;
       let primarySlugs = [], influenceSlugs = [];
       if (needParents) {
-        const result = await fetchParentGenres();
-        primarySlugs  = result.primarySlugs;
-        influenceSlugs = result.influenceSlugs;
+        const r = await fetchParentGenres();
+        primarySlugs   = r.primarySlugs;
+        influenceSlugs = r.influenceSlugs;
       }
-      window.open(buildChartUrlWithGenreCfg(genres, influences, primarySlugs, influenceSlugs), '_blank');
-    }));
-
-    // "Just Descriptors" — async so it can apply the category filter
-    wrapper.appendChild(makeAsyncBtn('Just Descriptors', async function () {
-      await fetchDescriptorCategoryMap(); // ensure map is ready
-      const filtered = filterAndSlice(descriptors);
-      window.open(buildChartUrl([], [], filtered), '_blank');
-    }));
+      let descList = [];
+      if (descriptorQty !== 0) {
+        await fetchDescriptorCategoryMap();
+        descList = filterAndSlice(descriptors);
+      }
+      window.open(buildChartUrlWithGenreCfg(genres, influences, primarySlugs, influenceSlugs, descList), '_blank');
+    });
+    searchBtn.style.marginLeft = '0';
+    wrapper.appendChild(searchBtn);
 
     // Settings toggle button + panel
     const settingsPanel = makeChartSettingsPanel();
@@ -525,19 +519,17 @@
     const settingsBtn = document.createElement('div');
     settingsBtn.className = 'more_btn';
     settingsBtn.textContent = '⚙';
-    settingsBtn.style.cssText = 'line-height:27.6px; cursor:pointer; margin:0;';
+    settingsBtn.style.cssText = 'line-height:27.6px; cursor:pointer;';
     settingsBtn.addEventListener('click', function () {
       const open = settingsPanel.style.display !== 'none';
       settingsPanel.style.display = open ? 'none' : 'block';
     });
+    wrapper.appendChild(settingsBtn);
 
     const td = document.createElement('td');
+    td.setAttribute('colspan', '2');
     td.appendChild(wrapper);
     td.appendChild(settingsPanel);
-
-    const tdGear = document.createElement('td');
-    tdGear.style.cssText = 'text-align:center; padding:0;';
-    tdGear.appendChild(settingsBtn);
 
     const th = document.createElement('th');
     th.className = 'info_hdr';
@@ -546,7 +538,6 @@
     const tr = document.createElement('tr');
     tr.appendChild(th);
     tr.appendChild(td);
-    tr.appendChild(tdGear);
 
     table.querySelector('tbody').appendChild(tr);
   }
