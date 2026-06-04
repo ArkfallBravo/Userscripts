@@ -355,12 +355,13 @@
     // ── Descriptor rows (populated async) ──
     const descLabelCell = labelCell('Exclude descriptor\ncategories:');
     descLabelCell.style.whiteSpace = 'pre-line';
+    descLabelCell.style.gridRow = 'span 2';  // spans both chip rows so neither is inflated
     const descRow1 = bubbleCell([]);
     const descRow2 = bubbleCell([]);
 
     grid.appendChild(descLabelCell);
     grid.appendChild(descRow1);
-    grid.appendChild(labelCell(''));
+    // no empty label cell — descLabelCell's span already covers col 1 row 2
     grid.appendChild(descRow2);
 
     fetchDescriptorCategoryMap().then(function (map) {
