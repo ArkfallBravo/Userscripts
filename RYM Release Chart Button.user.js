@@ -120,17 +120,18 @@
         });
 
         // Build parent→immediate-children map for individual descriptors.
+        // Structure: <div><b><a class="genre">Parent</a></b> [edit links] [desc div] <br> <blockquote>children</blockquote></div>
+        // The blockquote is a direct child of the same div as <b>, not the immediate next sibling.
         const parentMap = new Map();
         doc.querySelectorAll('b > a.genre[href*="/music_descriptor/"]').forEach(function (parentLink) {
           const parentSlug = normalizeSlug(parentLink.getAttribute('href'));
           if (!parentSlug) return;
-          const bEl = parentLink.parentElement;
-          let sibling = bEl.nextSibling;
-          while (sibling && sibling.nodeType !== 1) { sibling = sibling.nextSibling; }
-          if (!sibling || sibling.tagName !== 'BLOCKQUOTE') return;
-          const blockquote = sibling;
+          const parentDiv = parentLink.parentElement.parentElement; // <b>'s parent div
+          const blockquote = Array.from(parentDiv.children).find(function (el) { return el.tagName === 'BLOCKQUOTE'; });
+          if (!blockquote) return;
           const children = [];
           blockquote.querySelectorAll('a.genre[href*="/music_descriptor/"]').forEach(function (a) {
+            // Only immediate children: closest blockquote ancestor must be THIS blockquote
             if (a.closest('blockquote') === blockquote) {
               const s = normalizeSlug(a.getAttribute('href'));
               if (s) children.push(s);
