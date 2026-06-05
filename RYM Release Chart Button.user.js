@@ -296,12 +296,17 @@
   // ── Combined chart settings panel (always visible) ────────────────────────
 
   function makeChartSettingsPanel() {
+    const BASE_PX   = 4;
+    const CHIP_GAP  = BASE_PX + 'px';      // space between chips within a row
+    const ROW_GAP   = BASE_PX + 'px';      // space between rows within a group
+    const GROUP_GAP = 2 * BASE_PX + 'px';  // extra top margin before each new group; total inter-group space = 2 × ROW_GAP
+
     const panel = document.createElement('div');
     panel.style.cssText = 'padding:4px 2px 6px;';
 
     // One shared grid — all rows share the same label column width.
     const grid = document.createElement('div');
-    grid.style.cssText = 'display:grid; grid-template-columns:max-content 1fr; column-gap:4px; row-gap:2px;';
+    grid.style.cssText = 'display:grid; grid-template-columns:max-content 1fr; column-gap:4px; row-gap:' + ROW_GAP + ';';
     panel.appendChild(grid);
 
     function labelCell(text) {
@@ -313,7 +318,7 @@
 
     function bubbleCell(chips) {
       const el = document.createElement('div');
-      el.style.cssText = 'display:flex; align-items:center; gap:4px; flex-wrap:wrap;';
+      el.style.cssText = 'display:flex; align-items:center; gap:' + CHIP_GAP + '; flex-wrap:wrap;';
       chips.forEach(function (c) { el.appendChild(c); });
       return el;
     }
@@ -385,11 +390,15 @@
     ]));
 
     // ── Influences rows ──
-    grid.appendChild(labelCell('Influences:'));
-    grid.appendChild(bubbleCell([
+    const inflLabelCell = labelCell('Influences:');
+    inflLabelCell.style.marginTop = GROUP_GAP;
+    const inflRow1 = bubbleCell([
       makeGenreToggle('in genre',     function () { return genreCfg.inflToG;  }, function (v) { genreCfg.inflToG  = v; }),
       makeGenreToggle('in influence', function () { return genreCfg.inflToGe; }, function (v) { genreCfg.inflToGe = v; }),
-    ]));
+    ]);
+    inflRow1.style.marginTop = GROUP_GAP;
+    grid.appendChild(inflLabelCell);
+    grid.appendChild(inflRow1);
     grid.appendChild(labelCell(''));
     grid.appendChild(bubbleCell([
       makeGenreToggle('parents in genre',     function () { return genreCfg.inflParToG;  }, function (v) { genreCfg.inflParToG  = v; }),
@@ -429,7 +438,9 @@
     const descLabelCell = labelCell('Exclude descriptor\ncategories:');
     descLabelCell.style.whiteSpace = 'pre-line';
     descLabelCell.style.gridRow = 'span 2';  // spans both chip rows so neither is inflated
+    descLabelCell.style.marginTop = GROUP_GAP;
     const descRow1 = bubbleCell([]);
+    descRow1.style.marginTop = GROUP_GAP;
     const descRow2 = bubbleCell([]);
 
     grid.appendChild(descLabelCell);
@@ -487,8 +498,12 @@
       return chip;
     }
 
-    grid.appendChild(labelCell('Descriptor quantity:'));
-    grid.appendChild(bubbleCell([chip8, chip12, chip16, chipAll, makeExclParChip()]));
+    const qtyLabelCell = labelCell('Descriptor quantity:');
+    qtyLabelCell.style.marginTop = GROUP_GAP;
+    const qtyBubble = bubbleCell([chip8, chip12, chip16, chipAll, makeExclParChip()]);
+    qtyBubble.style.marginTop = GROUP_GAP;
+    grid.appendChild(qtyLabelCell);
+    grid.appendChild(qtyBubble);
 
     return panel;
   }
