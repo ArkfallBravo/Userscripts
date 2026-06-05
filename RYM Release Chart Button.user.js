@@ -296,10 +296,11 @@
   // ── Combined chart settings panel (always visible) ────────────────────────
 
   function makeChartSettingsPanel() {
-    const BASE_PX   = 4;
-    const CHIP_GAP  = BASE_PX + 'px';      // space between chips within a row
-    const ROW_GAP   = BASE_PX + 'px';      // space between rows within a group
-    const GROUP_GAP = 2 * BASE_PX + 'px';  // extra top margin before each new group; total inter-group space = 2 × ROW_GAP
+    const BASE_PX        = 4;
+    const CHIP_GAP       = BASE_PX + 'px';        // space between chips within a row
+    const ROW_GAP        = BASE_PX + 'px';        // space between rows within a group
+    const MINI_GROUP_GAP = BASE_PX + 'px';  // extra top margin between sub-rows within a section
+    const GROUP_GAP      = 2 * BASE_PX + 'px';    // extra top margin before each new group; total inter-group space = 2 × ROW_GAP
 
     const panel = document.createElement('div');
     panel.style.cssText = 'padding:4px 2px 6px;';
@@ -474,7 +475,7 @@
     // ── "Release descriptors" section header (full-width) ──
     const descHeader = document.createElement('div');
     descHeader.style.cssText = 'grid-column:1/-1; font-size:11px; opacity:0.55; margin-top:' + GROUP_GAP + ';';
-    descHeader.textContent = 'Release descriptors';
+    descHeader.textContent = 'Release descriptors:';
     grid.appendChild(descHeader);
 
     // ── Include row (sub-row, indented label) ──
@@ -487,7 +488,9 @@
     const descLabelCell = labelCell('Exclude:');
     descLabelCell.style.gridRow = 'span 2';  // spans both chip rows so neither is inflated
     descLabelCell.style.paddingLeft = '8px';
+    descLabelCell.style.marginTop = MINI_GROUP_GAP;
     const descRow1 = bubbleCell([]);
+    descRow1.style.marginTop = MINI_GROUP_GAP;
     const descRow2 = bubbleCell([]);
 
     grid.appendChild(descLabelCell);
