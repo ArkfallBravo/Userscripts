@@ -375,25 +375,25 @@
     // ── Genre rows ──
     grid.appendChild(labelCell('Genres:'));
     grid.appendChild(bubbleCell([
-      makeGenreToggle('genre',     function () { return genreCfg.genreToG;  }, function (v) { genreCfg.genreToG  = v; }),
-      makeGenreToggle('influence', function () { return genreCfg.genreToGe; }, function (v) { genreCfg.genreToGe = v; }),
+      makeGenreToggle('in genre',     function () { return genreCfg.genreToG;  }, function (v) { genreCfg.genreToG  = v; }),
+      makeGenreToggle('in influence', function () { return genreCfg.genreToGe; }, function (v) { genreCfg.genreToGe = v; }),
     ]));
     grid.appendChild(labelCell(''));
     grid.appendChild(bubbleCell([
-      makeGenreToggle('use parents for genre',     function () { return genreCfg.genreParToG;  }, function (v) { genreCfg.genreParToG  = v; }),
-      makeGenreToggle('use parents for influence', function () { return genreCfg.genreParToGe; }, function (v) { genreCfg.genreParToGe = v; }),
+      makeGenreToggle('parents in genre',     function () { return genreCfg.genreParToG;  }, function (v) { genreCfg.genreParToG  = v; }),
+      makeGenreToggle('parents in influence', function () { return genreCfg.genreParToGe; }, function (v) { genreCfg.genreParToGe = v; }),
     ]));
 
     // ── Influences rows ──
     grid.appendChild(labelCell('Influences:'));
     grid.appendChild(bubbleCell([
-      makeGenreToggle('genre',     function () { return genreCfg.inflToG;  }, function (v) { genreCfg.inflToG  = v; }),
-      makeGenreToggle('influence', function () { return genreCfg.inflToGe; }, function (v) { genreCfg.inflToGe = v; }),
+      makeGenreToggle('in genre',     function () { return genreCfg.inflToG;  }, function (v) { genreCfg.inflToG  = v; }),
+      makeGenreToggle('in influence', function () { return genreCfg.inflToGe; }, function (v) { genreCfg.inflToGe = v; }),
     ]));
     grid.appendChild(labelCell(''));
     grid.appendChild(bubbleCell([
-      makeGenreToggle('use parents for genre',     function () { return genreCfg.inflParToG;  }, function (v) { genreCfg.inflParToG  = v; }),
-      makeGenreToggle('use parents for influence', function () { return genreCfg.inflParToGe; }, function (v) { genreCfg.inflParToGe = v; }),
+      makeGenreToggle('parents in genre',     function () { return genreCfg.inflParToG;  }, function (v) { genreCfg.inflParToG  = v; }),
+      makeGenreToggle('parents in influence', function () { return genreCfg.inflParToGe; }, function (v) { genreCfg.inflParToGe = v; }),
     ]));
 
     // Quantity radio chip — only one active at a time.
@@ -478,7 +478,7 @@
       }
       refresh();
       chip.appendChild(circle);
-      chip.appendChild(document.createTextNode('Exclude parents of included'));
+      chip.appendChild(document.createTextNode('omit parents of included descriptors'));
       chip.addEventListener('click', function () {
         excludeParentDescs = !excludeParentDescs;
         saveExcludeParentDescs();
