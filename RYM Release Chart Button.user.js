@@ -435,7 +435,7 @@
     }
 
     // ── Descriptor rows (populated async) ──
-    const descLabelCell = labelCell('Exclude descriptor\ncategories:');
+    const descLabelCell = labelCell('Exclude categories:');
     descLabelCell.style.whiteSpace = 'pre-line';
     descLabelCell.style.gridRow = 'span 2';  // spans both chip rows so neither is inflated
     descLabelCell.style.marginTop = GROUP_GAP;
@@ -463,9 +463,9 @@
 
     // ── Descriptor quantity row ──
     const qtyChips = [];
-    const chip8   = makeQtyChip('8',   8,    qtyChips);
-    const chip12  = makeQtyChip('12',  12,   qtyChips);
-    const chip16  = makeQtyChip('16',  16,   qtyChips);
+    const chip8   = makeQtyChip('top 8',   8,    qtyChips);
+    const chip12  = makeQtyChip('top 12',  12,   qtyChips);
+    const chip16  = makeQtyChip('top 16',  16,   qtyChips);
     const chipAll = makeQtyChip('all', null, qtyChips);
     qtyChips.push(chip8, chip12, chip16, chipAll);
 
@@ -498,7 +498,7 @@
       return chip;
     }
 
-    const qtyLabelCell = labelCell('Descriptor quantity:');
+    const qtyLabelCell = labelCell('Include descriptors:');
     qtyLabelCell.style.marginTop = GROUP_GAP;
     const qtyBubble = bubbleCell([chip8, chip12, chip16, chipAll, makeExclParChip()]);
     qtyBubble.style.marginTop = GROUP_GAP;
