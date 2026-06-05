@@ -642,8 +642,9 @@
     wrapper.appendChild(searchBtn);
 
     // Settings toggle button + panel
+    const SETTINGS_OPEN_KEY = 'rym-rcb-settings-open';
     const settingsPanel = makeChartSettingsPanel();
-    settingsPanel.style.display = 'none';
+    settingsPanel.style.display = localStorage.getItem(SETTINGS_OPEN_KEY) === 'true' ? 'block' : 'none';
     const settingsBtn = document.createElement('div');
     settingsBtn.className = 'more_btn';
     settingsBtn.textContent = '⚙';
@@ -651,6 +652,7 @@
     settingsBtn.addEventListener('click', function () {
       const open = settingsPanel.style.display !== 'none';
       settingsPanel.style.display = open ? 'none' : 'block';
+      try { localStorage.setItem(SETTINGS_OPEN_KEY, String(!open)); } catch (_) {}
     });
     wrapper.appendChild(settingsBtn);
 
