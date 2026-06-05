@@ -378,7 +378,7 @@
     }
 
     // ── Genre rows ──
-    grid.appendChild(labelCell('Genres:'));
+    grid.appendChild(labelCell('Release genres:'));
     grid.appendChild(bubbleCell([
       makeGenreToggle('in genre',     function () { return genreCfg.genreToG;  }, function (v) { genreCfg.genreToG  = v; }),
       makeGenreToggle('in influence', function () { return genreCfg.genreToGe; }, function (v) { genreCfg.genreToGe = v; }),
@@ -390,7 +390,7 @@
     ]));
 
     // ── Influences rows ──
-    const inflLabelCell = labelCell('Influences:');
+    const inflLabelCell = labelCell('Release influences:');
     inflLabelCell.style.marginTop = GROUP_GAP;
     const inflRow1 = bubbleCell([
       makeGenreToggle('in genre',     function () { return genreCfg.inflToG;  }, function (v) { genreCfg.inflToG  = v; }),
@@ -434,34 +434,7 @@
       return chip;
     }
 
-    // ── Descriptor rows (populated async) ──
-    const descLabelCell = labelCell('Exclude categories:');
-    descLabelCell.style.whiteSpace = 'pre-line';
-    descLabelCell.style.gridRow = 'span 2';  // spans both chip rows so neither is inflated
-    descLabelCell.style.marginTop = GROUP_GAP;
-    const descRow1 = bubbleCell([]);
-    descRow1.style.marginTop = GROUP_GAP;
-    const descRow2 = bubbleCell([]);
-
-    grid.appendChild(descLabelCell);
-    grid.appendChild(descRow1);
-    // no empty label cell — descLabelCell's span already covers col 1 row 2
-    grid.appendChild(descRow2);
-
-    fetchDescriptorCategoryMap().then(function (map) {
-      if (map.size === 0 || topLevelCategories.length === 0) {
-        const msg = document.createElement('span');
-        msg.style.cssText = 'font-size:11px; opacity:0.6;';
-        msg.textContent = 'Could not load categories.';
-        descRow1.appendChild(msg);
-        return;
-      }
-      const half = Math.ceil(topLevelCategories.length / 2);
-      topLevelCategories.slice(0, half).forEach(function (cat) { descRow1.appendChild(makeDescChip(cat)); });
-      topLevelCategories.slice(half).forEach(function (cat)    { descRow2.appendChild(makeDescChip(cat)); });
-    });
-
-    // ── Descriptor quantity row ──
+    // ── Descriptor quantity chips (created before grid rows so they can be referenced) ──
     const qtyChips = [];
     const chip8   = makeQtyChip('top 8',   8,    qtyChips);
     const chip12  = makeQtyChip('top 12',  12,   qtyChips);
@@ -498,12 +471,46 @@
       return chip;
     }
 
-    const qtyLabelCell = labelCell('Include descriptors:');
-    qtyLabelCell.style.marginTop = GROUP_GAP;
-    const qtyBubble = bubbleCell([chip8, chip12, chip16, chipAll, makeExclParChip()]);
-    qtyBubble.style.marginTop = GROUP_GAP;
-    grid.appendChild(qtyLabelCell);
-    grid.appendChild(qtyBubble);
+    // ── "Release descriptors" section header (full-width) ──
+    const descHeader = document.createElement('div');
+    descHeader.style.cssText = 'grid-column:1/-1; font-size:11px; opacity:0.55; margin-top:' + GROUP_GAP + ';';
+    descHeader.textContent = 'Release descriptors';
+    grid.appendChild(descHeader);
+
+    // ── Include row (sub-row, indented label) ──
+    const inclLabel = labelCell('Include:');
+    inclLabel.style.paddingLeft = '8px';
+    grid.appendChild(inclLabel);
+    grid.appendChild(bubbleCell([chip8, chip12, chip16, chipAll]));
+
+    // ── Exclude categories rows (populated async, indented label spanning 2 rows) ──
+    const descLabelCell = labelCell('Exclude:');
+    descLabelCell.style.gridRow = 'span 2';  // spans both chip rows so neither is inflated
+    descLabelCell.style.paddingLeft = '8px';
+    const descRow1 = bubbleCell([]);
+    const descRow2 = bubbleCell([]);
+
+    grid.appendChild(descLabelCell);
+    grid.appendChild(descRow1);
+    // no empty label cell — descLabelCell's span already covers col 1 row 2
+    grid.appendChild(descRow2);
+
+    fetchDescriptorCategoryMap().then(function (map) {
+      if (map.size === 0 || topLevelCategories.length === 0) {
+        const msg = document.createElement('span');
+        msg.style.cssText = 'font-size:11px; opacity:0.6;';
+        msg.textContent = 'Could not load categories.';
+        descRow1.appendChild(msg);
+        return;
+      }
+      const half = Math.ceil(topLevelCategories.length / 2);
+      topLevelCategories.slice(0, half).forEach(function (cat) { descRow1.appendChild(makeDescChip(cat)); });
+      topLevelCategories.slice(half).forEach(function (cat)    { descRow2.appendChild(makeDescChip(cat)); });
+    });
+
+    // ── Omit-parents row (empty label + chip, indented to match chip column) ──
+    grid.appendChild(labelCell(''));
+    grid.appendChild(bubbleCell([makeExclParChip()]));
 
     return panel;
   }
