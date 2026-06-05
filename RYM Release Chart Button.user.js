@@ -57,6 +57,7 @@
     (function () { try { return JSON.parse(localStorage.getItem(DS_EXCL_KEY) || '[]'); } catch (_) { return []; } })()
   );
   let descriptorCategoryMap = null;  // Map<string, string[]>  category name → descriptor slugs
+  let descriptorParentMap = null;    // Map<parentSlug, immediateChildSlugs[]>
   let topLevelCategories = [];       // names of categories not nested inside another parent
   let categoryFetchPromise = null;
 
@@ -75,6 +76,13 @@
 
   function saveDescriptorQty() {
     try { localStorage.setItem(DS_QTY_KEY, String(descriptorQty)); } catch (_) {}
+  }
+
+  const EXCL_PAR_KEY = 'rym-rcb-excl-par-desc';
+  let excludeParentDescs = localStorage.getItem(EXCL_PAR_KEY) === 'true';
+
+  function saveExcludeParentDescs() {
+    try { localStorage.setItem(EXCL_PAR_KEY, String(excludeParentDescs)); } catch (_) {}
   }
 
   function fetchDescriptorCategoryMap() {
@@ -111,6 +119,27 @@
           }
         });
 
+        // Build parent→immediate-children map for individual descriptors.
+        const parentMap = new Map();
+        doc.querySelectorAll('b > a.genre[href*="/music_descriptor/"]').forEach(function (parentLink) {
+          const parentSlug = normalizeSlug(parentLink.getAttribute('href'));
+          if (!parentSlug) return;
+          const bEl = parentLink.parentElement;
+          let sibling = bEl.nextSibling;
+          while (sibling && sibling.nodeType !== 1) { sibling = sibling.nextSibling; }
+          if (!sibling || sibling.tagName !== 'BLOCKQUOTE') return;
+          const blockquote = sibling;
+          const children = [];
+          blockquote.querySelectorAll('a.genre[href*="/music_descriptor/"]').forEach(function (a) {
+            if (a.closest('blockquote') === blockquote) {
+              const s = normalizeSlug(a.getAttribute('href'));
+              if (s) children.push(s);
+            }
+          });
+          if (children.length) parentMap.set(parentSlug, children);
+        });
+        descriptorParentMap = parentMap;
+
         descriptorCategoryMap = map;
         return map;
       })
@@ -133,7 +162,48 @@
       });
       result = result.filter(function (d) { return !excludedSlugs.has(d); });
     }
-    return descriptorQty === null ? result : result.slice(0, descriptorQty);
+    const sliced = descriptorQty === null ? result : result.slice(0, descriptorQty);
+    if (!excludeParentDescs) return sliced;
+    const pool = result.filter(function (d) { return sliced.indexOf(d) === -1; });
+    return applyExcludeParents(sliced, pool);
+  }
+
+  // Returns true if `ancestor` is a direct or indirect parent of `descendant`.
+  function isAncestorOf(ancestor, descendant, visited) {
+    if (!descriptorParentMap) return false;
+    visited = visited || new Set();
+    if (visited.has(ancestor)) return false;
+    visited.add(ancestor);
+    const children = descriptorParentMap.get(ancestor) || [];
+    for (let i = 0; i < children.length; i++) {
+      if (children[i] === descendant) return true;
+      if (isAncestorOf(children[i], descendant, visited)) return true;
+    }
+    return false;
+  }
+
+  // Remove any descriptor that is an ancestor (at any depth) of another
+  // descriptor in the selected set, replacing it with the next from pool.
+  function applyExcludeParents(selected, pool) {
+    if (!descriptorParentMap) return selected;
+    const result = selected.slice();
+    const remaining = pool.slice();
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (let i = 0; i < result.length; i++) {
+        const isAnc = result.some(function (other, j) {
+          return j !== i && isAncestorOf(result[i], other);
+        });
+        if (isAnc) {
+          result.splice(i, 1);
+          if (remaining.length) result.push(remaining.shift());
+          changed = true;
+          break;
+        }
+      }
+    }
+    return result;
   }
 
   // ── Genre config ───────────────────────────────────────────────────────────
@@ -387,8 +457,37 @@
     const chipAll = makeQtyChip('all', null, qtyChips);
     qtyChips.push(chip8, chip12, chip16, chipAll);
 
+    // "Exclude parents of included" — red toggle chip, independent of qty.
+    function makeExclParChip() {
+      const chip = document.createElement('span');
+      chip.style.cssText = [
+        'display:inline-flex', 'align-items:center', 'gap:4px',
+        'cursor:pointer', 'font-size:11px', 'padding:1px 6px 1px 4px',
+        'border-radius:3px', 'user-select:none', 'border:1px solid currentColor',
+        'opacity:0.65', 'transition:opacity 0.1s',
+      ].join(';');
+      const circle = document.createElement('span');
+      circle.style.cssText = 'display:inline-block; width:8px; height:8px; border-radius:50%; flex-shrink:0; transition:background 0.1s;';
+      function refresh() {
+        circle.style.background = excludeParentDescs ? '#c0392b' : 'transparent';
+        circle.style.border     = excludeParentDescs ? '1px solid #c0392b' : '1px solid currentColor';
+        chip.style.opacity      = excludeParentDescs ? '1' : '0.65';
+        chip.style.color        = excludeParentDescs ? '#c0392b' : '';
+        chip.style.border       = excludeParentDescs ? '1px solid #c0392b' : '1px solid currentColor';
+      }
+      refresh();
+      chip.appendChild(circle);
+      chip.appendChild(document.createTextNode('Exclude parents of included'));
+      chip.addEventListener('click', function () {
+        excludeParentDescs = !excludeParentDescs;
+        saveExcludeParentDescs();
+        refresh();
+      });
+      return chip;
+    }
+
     grid.appendChild(labelCell('Descriptor quantity:'));
-    grid.appendChild(bubbleCell([chip8, chip12, chip16, chipAll]));
+    grid.appendChild(bubbleCell([chip8, chip12, chip16, chipAll, makeExclParChip()]));
 
     return panel;
   }
