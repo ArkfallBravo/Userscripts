@@ -18,6 +18,7 @@
   // UNCONFIRMED rules below.
   const DEBUG = true;
   const EMPHASIS_WEIGHT = 700;
+  const REGULAR_WEIGHT  = 400;
 
   function addStyle(css) {
     const style = document.createElement('style');
@@ -77,7 +78,7 @@
     /* UNCONFIRMED: .album_title */
     .album_title {
       font-size: 30px !important;
-      font-weight: 800 !important;
+      font-weight: EMPHASIS_WEIGHT !important;
       letter-spacing: -0.5px !important;
       line-height: 1.15 !important;
       margin-bottom: 8px !important;
@@ -86,6 +87,7 @@
     /* ── Info table: mute labels, remove grid borders ── */
     /* CONFIRMED: table.album_info, th.info_hdr */
     table.album_info {
+      font-size: 14px !important;
       border-collapse: collapse !important;
     }
     table.album_info tr {
@@ -100,21 +102,26 @@
       border: none !important;
     }
     th.info_hdr {
+      // display: none;
       font-size: 12px !important;
       text-transform: uppercase !important;
-      letter-spacing: 0.1em !important;
-      font-weight: 700 !important;
+    //   letter-spacing: 0.1em !important;
+      font-weight: REGULAR_WEIGHT !important;
       color: var(--mono-8, #999) !important;
       vertical-align: top !important;
       padding-top: 10px !important;
       white-space: nowrap !important;
     }
 
+    .artist {
+      font-size: 20px !important;
+    }
+
     /* ── Rating: make the score the hero ─────────── */
     /* UNCONFIRMED: .avg_rating, .max_rating, .num_ratings */
     .avg_rating {
-      font-size: 30px !important;
-      font-weight: 800 !important;
+      font-size: 24px !important;
+      font-weight: EMPHASIS_WEIGHT !important;
       line-height: 1 !important;
       color: var(--mono-1, #111) !important;
       vertical-align: baseline !important;
