@@ -307,13 +307,31 @@
 
     // One shared grid — all rows share the same label column width.
     const grid = document.createElement('div');
-    grid.style.cssText = 'display:grid; grid-template-columns:max-content 1fr; column-gap:4px; row-gap:' + ROW_GAP + ';';
+    grid.style.cssText = 'display:grid; grid-template-columns:max-content 1fr; column-gap:4px; row-gap:' + ROW_GAP + '; color:var(--mono-6);';
     panel.appendChild(grid);
 
     function labelCell(text) {
       const el = document.createElement('div');
-      el.style.cssText = 'display:flex; align-items:flex-start; padding-top:2px; font-size:11px; opacity:0.55; white-space:nowrap;';
+      el.style.cssText = 'display:flex; align-items:flex-start; padding-top:2px; font-size:11px; color:var(--mono-6); white-space:nowrap;';
       el.textContent = text;
+      return el;
+    }
+
+    function boldLabelCell(text) {
+      const el = labelCell(text);
+      el.style.fontWeight = '700';
+      return el;
+    }
+
+    function sectionLabelCell(text) {
+      const el = boldLabelCell(text);
+      el.style.fontSize = '0.9em';
+      return el;
+    }
+
+    function subLabelCell(text) {
+      const el = boldLabelCell(text);
+      el.style.fontSize = '0.8em';
       return el;
     }
 
@@ -331,14 +349,13 @@
         'display:inline-flex', 'align-items:center', 'gap:4px',
         'cursor:pointer', 'font-size:11px', 'padding:1px 6px 1px 4px',
         'border-radius:3px', 'user-select:none', 'border:1px solid currentColor',
-        'opacity:0.65', 'transition:opacity 0.1s',
+        'transition:opacity 0.1s',
       ].join(';');
       const circle = document.createElement('span');
       circle.style.cssText = 'display:inline-block; width:8px; height:8px; border-radius:50%; flex-shrink:0; transition:background 0.1s;';
       function refresh() {
         circle.style.background = getVal() ? 'currentColor' : 'transparent';
         circle.style.border     = '1px solid currentColor';
-        chip.style.opacity      = getVal() ? '1' : '0.65';
       }
       refresh();
       chip.appendChild(circle);
@@ -354,17 +371,16 @@
         'display:inline-flex', 'align-items:center', 'gap:4px',
         'cursor:pointer', 'font-size:11px', 'padding:1px 6px 1px 4px',
         'border-radius:3px', 'user-select:none', 'border:1px solid currentColor',
-        'opacity:0.65', 'transition:opacity 0.1s',
+        'transition:opacity 0.1s',
       ].join(';');
       const circle = document.createElement('span');
       circle.style.cssText = 'display:inline-block; width:8px; height:8px; border-radius:50%; flex-shrink:0; transition:background 0.1s;';
       function refresh() {
         const excluded = excludedCategories.has(catName);
-        circle.style.background = excluded ? '#c0392b' : 'transparent';
-        circle.style.border     = excluded ? '1px solid #c0392b' : '1px solid currentColor';
-        chip.style.opacity      = excluded ? '1' : '0.65';
-        chip.style.color        = excluded ? '#c0392b' : '';
-        chip.style.border       = excluded ? '1px solid #c0392b' : '1px solid currentColor';
+        circle.style.background = excluded ? 'var(--gen-text-red)' : 'transparent';
+        circle.style.border     = excluded ? '1px solid var(--gen-text-red)' : '1px solid currentColor';
+        chip.style.color        = excluded ? 'var(--gen-text-red)' : '';
+        chip.style.border       = excluded ? '1px solid var(--gen-text-red)' : '1px solid currentColor';
       }
       refresh();
       chip.appendChild(circle);
@@ -379,7 +395,7 @@
     }
 
     // ── Genre rows ──
-    grid.appendChild(labelCell('Release genres:'));
+    grid.appendChild(sectionLabelCell('Release genres:'));
     grid.appendChild(bubbleCell([
       makeGenreToggle('in genre',     function () { return genreCfg.genreToG;  }, function (v) { genreCfg.genreToG  = v; }),
       makeGenreToggle('in influence', function () { return genreCfg.genreToGe; }, function (v) { genreCfg.genreToGe = v; }),
@@ -391,7 +407,7 @@
     ]));
 
     // ── Influences rows ──
-    const inflLabelCell = labelCell('Release influences:');
+    const inflLabelCell = sectionLabelCell('Release influences:');
     inflLabelCell.style.marginTop = GROUP_GAP;
     const inflRow1 = bubbleCell([
       makeGenreToggle('in genre',     function () { return genreCfg.inflToG;  }, function (v) { genreCfg.inflToG  = v; }),
@@ -413,7 +429,7 @@
         'display:inline-flex', 'align-items:center', 'gap:4px',
         'cursor:pointer', 'font-size:11px', 'padding:1px 6px 1px 4px',
         'border-radius:3px', 'user-select:none', 'border:1px solid currentColor',
-        'opacity:0.65', 'transition:opacity 0.1s',
+        'transition:opacity 0.1s',
       ].join(';');
       const circle = document.createElement('span');
       circle.style.cssText = 'display:inline-block; width:8px; height:8px; border-radius:50%; flex-shrink:0; transition:background 0.1s;';
@@ -421,7 +437,6 @@
         const active = descriptorQty === value;
         circle.style.background = active ? 'currentColor' : 'transparent';
         circle.style.border     = '1px solid currentColor';
-        chip.style.opacity      = active ? '1' : '0.65';
       }
       refresh();
       chip.appendChild(circle);
@@ -450,16 +465,15 @@
         'display:inline-flex', 'align-items:center', 'gap:4px',
         'cursor:pointer', 'font-size:11px', 'padding:1px 6px 1px 4px',
         'border-radius:3px', 'user-select:none', 'border:1px solid currentColor',
-        'opacity:0.65', 'transition:opacity 0.1s',
+        'transition:opacity 0.1s',
       ].join(';');
       const circle = document.createElement('span');
       circle.style.cssText = 'display:inline-block; width:8px; height:8px; border-radius:50%; flex-shrink:0; transition:background 0.1s;';
       function refresh() {
-        circle.style.background = excludeParentDescs ? '#c0392b' : 'transparent';
-        circle.style.border     = excludeParentDescs ? '1px solid #c0392b' : '1px solid currentColor';
-        chip.style.opacity      = excludeParentDescs ? '1' : '0.65';
-        chip.style.color        = excludeParentDescs ? '#c0392b' : '';
-        chip.style.border       = excludeParentDescs ? '1px solid #c0392b' : '1px solid currentColor';
+        circle.style.background = excludeParentDescs ? 'var(--gen-text-red)' : 'transparent';
+        circle.style.border     = excludeParentDescs ? '1px solid var(--gen-text-red)' : '1px solid currentColor';
+        chip.style.color        = excludeParentDescs ? 'var(--gen-text-red)' : '';
+        chip.style.border       = excludeParentDescs ? '1px solid var(--gen-text-red)' : '1px solid currentColor';
       }
       refresh();
       chip.appendChild(circle);
@@ -472,31 +486,36 @@
       return chip;
     }
 
-    // ── "Release descriptors" section header (full-width) ──
-    const descHeader = document.createElement('div');
-    descHeader.style.cssText = 'grid-column:1/-1; font-size:11px; opacity:0.55; margin-top:' + GROUP_GAP + ';';
-    descHeader.textContent = 'Release descriptors:';
-    grid.appendChild(descHeader);
+    // ── "Release descriptors" section header ──
+    const descHeaderLabel = sectionLabelCell('Release descriptors:');
+    descHeaderLabel.style.marginTop = GROUP_GAP;
+    const descHeaderEmpty = bubbleCell([]);
+    descHeaderEmpty.style.marginTop = GROUP_GAP;
+    grid.appendChild(descHeaderLabel);
+    grid.appendChild(descHeaderEmpty);
 
     // ── Include row (sub-row, indented label) ──
-    const inclLabel = labelCell('Include:');
+    const inclLabel = subLabelCell('Include:');
     inclLabel.style.paddingLeft = '8px';
     grid.appendChild(inclLabel);
     grid.appendChild(bubbleCell([chip8, chip12, chip16, chipAll]));
 
     // ── Exclude categories rows (populated async, indented label spanning 2 rows) ──
-    const descLabelCell = labelCell('Exclude:');
-    descLabelCell.style.gridRow = 'span 2';  // spans both chip rows so neither is inflated
+    const descLabelCell = subLabelCell('Exclude:');
+    descLabelCell.style.gridRow = 'span 3';  // spans all three chip rows so none is inflated
     descLabelCell.style.paddingLeft = '8px';
     descLabelCell.style.marginTop = MINI_GROUP_GAP;
     const descRow1 = bubbleCell([]);
     descRow1.style.marginTop = MINI_GROUP_GAP;
     const descRow2 = bubbleCell([]);
 
+    const descRow3 = bubbleCell([makeExclParChip()]);
+
     grid.appendChild(descLabelCell);
     grid.appendChild(descRow1);
-    // no empty label cell — descLabelCell's span already covers col 1 row 2
+    // no empty label cell — descLabelCell's span already covers col 1 rows 2 and 3
     grid.appendChild(descRow2);
+    grid.appendChild(descRow3);
 
     fetchDescriptorCategoryMap().then(function (map) {
       if (map.size === 0 || topLevelCategories.length === 0) {
@@ -510,10 +529,6 @@
       topLevelCategories.slice(0, half).forEach(function (cat) { descRow1.appendChild(makeDescChip(cat)); });
       topLevelCategories.slice(half).forEach(function (cat)    { descRow2.appendChild(makeDescChip(cat)); });
     });
-
-    // ── Omit-parents row (empty label + chip, indented to match chip column) ──
-    grid.appendChild(labelCell(''));
-    grid.appendChild(bubbleCell([makeExclParChip()]));
 
     return panel;
   }
