@@ -78,10 +78,9 @@
     /* UNCONFIRMED: .album_title */
     .album_title {
       font-size: 30px !important;
-      font-weight: EMPHASIS_WEIGHT !important;
-      letter-spacing: -0.5px !important;
+      font-weight: ${REGULAR_WEIGHT} !important;
       line-height: 1.15 !important;
-      margin-bottom: 8px !important;
+      margin-bottom: 4px !important;
     }
 
     /* ── Info table: mute labels, remove grid borders ── */
@@ -101,12 +100,19 @@
       padding: 8px 10px 8px 0 !important;
       border: none !important;
     }
+    table.album_info_outer {
+      margin-top: 0 !important;
+    }
+    table.album_info tr:first-child th,
+    table.album_info tr:first-child td {
+      padding-top: 0 !important;
+    }
     th.info_hdr {
       // display: none;
       font-size: 12px !important;
       text-transform: uppercase !important;
     //   letter-spacing: 0.1em !important;
-      font-weight: REGULAR_WEIGHT !important;
+      font-weight: ${REGULAR_WEIGHT} !important;
       color: var(--mono-8, #999) !important;
       vertical-align: top !important;
       padding-top: 10px !important;
@@ -121,7 +127,7 @@
     /* UNCONFIRMED: .avg_rating, .max_rating, .num_ratings */
     .avg_rating {
       font-size: 24px !important;
-      font-weight: EMPHASIS_WEIGHT !important;
+      font-weight: ${EMPHASIS_WEIGHT} !important;
       line-height: 1 !important;
       color: var(--mono-1, #111) !important;
       vertical-align: baseline !important;
@@ -303,7 +309,7 @@
       border-radius: 2px !important;
       overflow: hidden !important;
       height: 4px !important;
-      margin-bottom: 12px !important;
+      margin-bottom: 4px !important;
     }
     table.color_bar td {
       height: 4px !important;
@@ -334,6 +340,14 @@
     //    CONFIRMED: both selectors verified.
     stripCommas(document.querySelector('.release_pri_genres'));
     stripCommas(document.querySelector('.release_sec_genres'));
+
+    // 3. Reformat descriptor list: replace commas with interpuncts.
+    //    CONFIRMED: span.release_pri_descriptors
+    const descEl = document.querySelector('.release_pri_descriptors');
+    if (descEl) {
+      const words = descEl.textContent.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      descEl.textContent = words.join(' · ');
+    }
   }
 
   if (document.readyState === 'loading') {
