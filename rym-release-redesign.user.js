@@ -17,11 +17,21 @@
   // Use the MISSING lines to find the real class names and fix the
   // UNCONFIRMED rules below.
   const DEBUG = true;
+  const EMPHASIS_WEIGHT = 700;
 
   function addStyle(css) {
     const style = document.createElement('style');
     style.textContent = css;
     (document.head || document.documentElement).appendChild(style);
+  }
+
+  function stripCommas(el) {
+    if (!el) { return; }
+    Array.from(el.childNodes).forEach(function (node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        el.removeChild(node);
+      }
+    });
   }
 
   // Selectors to probe when DEBUG is on.
@@ -61,10 +71,12 @@
 
   addStyle(`
 
+    /* Type scale (Refactoring UI): 12 · 14 · 16 · 18 · 20 · 24 · 30 · 36 · 48 · 60 · 72 px */
+
     /* ── Album title ─────────────────────────────── */
     /* UNCONFIRMED: .album_title */
     .album_title {
-      font-size: 28px !important;
+      font-size: 30px !important;
       font-weight: 800 !important;
       letter-spacing: -0.5px !important;
       line-height: 1.15 !important;
@@ -88,7 +100,7 @@
       border: none !important;
     }
     th.info_hdr {
-      font-size: 10px !important;
+      font-size: 12px !important;
       text-transform: uppercase !important;
       letter-spacing: 0.1em !important;
       font-weight: 700 !important;
@@ -101,27 +113,27 @@
     /* ── Rating: make the score the hero ─────────── */
     /* UNCONFIRMED: .avg_rating, .max_rating, .num_ratings */
     .avg_rating {
-      font-size: 32px !important;
+      font-size: 30px !important;
       font-weight: 800 !important;
       line-height: 1 !important;
       color: var(--mono-1, #111) !important;
       vertical-align: baseline !important;
     }
     .max_rating {
-      font-size: 15px !important;
+      font-size: 14px !important;
       color: var(--mono-9, #aaa) !important;
       vertical-align: baseline !important;
       margin-left: 2px !important;
     }
     .num_ratings {
       display: block !important;
-      font-size: 11px !important;
+      font-size: 12px !important;
       color: var(--mono-8, #aaa) !important;
       margin-top: 4px !important;
       font-weight: normal !important;
     }
     .num_ratings b {
-      font-weight: 600 !important;
+      font-weight: ${EMPHASIS_WEIGHT} !important;
     }
 
     /* ── Genre chips ─────────────────────────────── */
@@ -138,7 +150,7 @@
     .release_pri_genres a.genre {
       background: color-mix(in srgb, var(--gen-blue-dark, #2a5298) 12%, transparent) !important;
       color: var(--gen-blue-dark, #2a5298) !important;
-      font-weight: 600 !important;
+      font-weight: ${EMPHASIS_WEIGHT} !important;
     }
     .release_sec_genres a.genre {
       background: var(--mono-f0, #f0f0f0) !important;
@@ -150,7 +162,7 @@
     /* ── Descriptor text: smaller and muted ─────── */
     /* CONFIRMED: .release_pri_descriptors */
     .release_pri_descriptors {
-      font-size: 11.5px !important;
+      font-size: 12px !important;
       color: var(--mono-7, #888) !important;
       line-height: 1.8 !important;
     }
@@ -177,13 +189,13 @@
     }
     .tracklist_num {
       color: var(--mono-c, #ccc) !important;
-      font-size: 11px !important;
+      font-size: 12px !important;
       min-width: 20px !important;
       text-align: right !important;
       flex-shrink: 0 !important;
     }
     .tracklist_title {
-      font-size: 13px !important;
+      font-size: 14px !important;
       font-weight: 500 !important;
       flex: 1 !important;
     }
@@ -201,7 +213,7 @@
       flex-shrink: 0 !important;
     }
     .tracklist_total {
-      font-size: 11px !important;
+      font-size: 12px !important;
       color: var(--mono-8, #aaa) !important;
       padding: 8px 4px !important;
     }
@@ -252,13 +264,13 @@
       background: color-mix(in srgb, var(--gen-blue-dark, #2a5298) 12%, transparent) !important;
       border-color: transparent !important;
       color: var(--gen-blue-dark, #2a5298) !important;
-      font-weight: 600 !important;
+      font-weight: ${EMPHASIS_WEIGHT} !important;
     }
 
     /* ── Section headers ─────────────────────────── */
     /* UNCONFIRMED: .release_page_header */
     .release_page_header h2 {
-      font-size: 11px !important;
+      font-size: 12px !important;
       text-transform: uppercase !important;
       letter-spacing: 0.12em !important;
       font-weight: 700 !important;
@@ -311,19 +323,10 @@
       }
     }
 
-    // 2. Insert a visual gap between primary and secondary genre chip groups.
+    // 2. Remove comma text nodes between genre chips so the pill layout is clean.
     //    CONFIRMED: both selectors verified.
-    try {
-      const priGenres = document.querySelector('.release_pri_genres');
-      const secGenres = document.querySelector('.release_sec_genres');
-      if (priGenres && secGenres) {
-        const gap = document.createElement('div');
-        gap.style.cssText = 'height:6px';
-        priGenres.parentNode.insertBefore(gap, secGenres);
-      }
-    } catch (e) {
-      if (DEBUG) { console.warn('[RYM-redesign] genre gap pass failed:', e); }
-    }
+    stripCommas(document.querySelector('.release_pri_genres'));
+    stripCommas(document.querySelector('.release_sec_genres'));
   }
 
   if (document.readyState === 'loading') {
