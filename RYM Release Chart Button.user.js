@@ -325,13 +325,15 @@
 
     function sectionLabelCell(text) {
       const el = boldLabelCell(text);
-      el.style.fontSize = '0.9em';
+      el.style.fontSize = '0.95em';
       return el;
     }
 
     function subLabelCell(text) {
       const el = boldLabelCell(text);
-      el.style.fontSize = '0.8em';
+      el.style.fontSize = '0.9em';
+      el.style.alignItems = 'center';
+      el.style.justifyContent = 'flex-end';
       return el;
     }
 
@@ -347,7 +349,7 @@
       const chip = document.createElement('span');
       chip.style.cssText = [
         'display:inline-flex', 'align-items:center', 'gap:4px',
-        'cursor:pointer', 'font-size:11px', 'padding:1px 6px 1px 4px',
+        'cursor:pointer', 'font-size:0.8em', 'font-weight:400', 'padding:1px 6px 1px 4px',
         'border-radius:3px', 'user-select:none', 'border:1px solid currentColor',
         'transition:opacity 0.1s',
       ].join(';');
@@ -369,7 +371,7 @@
       const chip = document.createElement('span');
       chip.style.cssText = [
         'display:inline-flex', 'align-items:center', 'gap:4px',
-        'cursor:pointer', 'font-size:11px', 'padding:1px 6px 1px 4px',
+        'cursor:pointer', 'font-size:0.8em', 'font-weight:400', 'padding:1px 6px 1px 4px',
         'border-radius:3px', 'user-select:none', 'border:1px solid currentColor',
         'transition:opacity 0.1s',
       ].join(';');
@@ -427,7 +429,7 @@
       const chip = document.createElement('span');
       chip.style.cssText = [
         'display:inline-flex', 'align-items:center', 'gap:4px',
-        'cursor:pointer', 'font-size:11px', 'padding:1px 6px 1px 4px',
+        'cursor:pointer', 'font-size:0.8em', 'font-weight:400', 'padding:1px 6px 1px 4px',
         'border-radius:3px', 'user-select:none', 'border:1px solid currentColor',
         'transition:opacity 0.1s',
       ].join(';');
@@ -463,7 +465,7 @@
       const chip = document.createElement('span');
       chip.style.cssText = [
         'display:inline-flex', 'align-items:center', 'gap:4px',
-        'cursor:pointer', 'font-size:11px', 'padding:1px 6px 1px 4px',
+        'cursor:pointer', 'font-size:0.8em', 'font-weight:400', 'padding:1px 6px 1px 4px',
         'border-radius:3px', 'user-select:none', 'border:1px solid currentColor',
         'transition:opacity 0.1s',
       ].join(';');
@@ -502,20 +504,17 @@
 
     // ── Exclude categories rows (populated async, indented label spanning 2 rows) ──
     const descLabelCell = subLabelCell('Exclude:');
-    descLabelCell.style.gridRow = 'span 3';  // spans all three chip rows so none is inflated
+    descLabelCell.style.gridRow = 'span 2';  // spans category chips row + omit-parents row
     descLabelCell.style.paddingLeft = '8px';
     descLabelCell.style.marginTop = MINI_GROUP_GAP;
     const descRow1 = bubbleCell([]);
     descRow1.style.marginTop = MINI_GROUP_GAP;
-    const descRow2 = bubbleCell([]);
-
-    const descRow3 = bubbleCell([makeExclParChip()]);
+    const descRow2 = bubbleCell([makeExclParChip()]);
 
     grid.appendChild(descLabelCell);
     grid.appendChild(descRow1);
-    // no empty label cell — descLabelCell's span already covers col 1 rows 2 and 3
+    // no empty label cell — descLabelCell's span already covers col 1 row 2
     grid.appendChild(descRow2);
-    grid.appendChild(descRow3);
 
     fetchDescriptorCategoryMap().then(function (map) {
       if (map.size === 0 || topLevelCategories.length === 0) {
@@ -525,9 +524,7 @@
         descRow1.appendChild(msg);
         return;
       }
-      const half = Math.ceil(topLevelCategories.length / 2);
-      topLevelCategories.slice(0, half).forEach(function (cat) { descRow1.appendChild(makeDescChip(cat)); });
-      topLevelCategories.slice(half).forEach(function (cat)    { descRow2.appendChild(makeDescChip(cat)); });
+      topLevelCategories.forEach(function (cat) { descRow1.appendChild(makeDescChip(cat)); });
     });
 
     return panel;
