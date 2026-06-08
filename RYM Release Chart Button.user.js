@@ -358,6 +358,7 @@
       function refresh() {
         circle.style.background = getVal() ? 'currentColor' : 'transparent';
         circle.style.border     = '1px solid currentColor';
+        chip.style.color        = getVal() ? '' : '#69707C';
       }
       refresh();
       chip.appendChild(circle);
@@ -379,10 +380,10 @@
       circle.style.cssText = 'display:inline-block; width:8px; height:8px; border-radius:50%; flex-shrink:0; transition:background 0.1s;';
       function refresh() {
         const excluded = excludedCategories.has(catName);
-        circle.style.background = excluded ? 'var(--gen-text-red)' : 'transparent';
-        circle.style.border     = excluded ? '1px solid var(--gen-text-red)' : '1px solid currentColor';
-        chip.style.color        = excluded ? 'var(--gen-text-red)' : '';
-        chip.style.border       = excluded ? '1px solid var(--gen-text-red)' : '1px solid currentColor';
+        circle.style.background = excluded ? '#FF6E6E' : 'transparent';
+        circle.style.border     = excluded ? '1px solid #FF6E6E' : '1px solid currentColor';
+        chip.style.color        = excluded ? '#FF6E6E' : '#69707C';
+        chip.style.border       = excluded ? '1px solid #FF6E6E' : '1px solid currentColor';
       }
       refresh();
       chip.appendChild(circle);
@@ -439,6 +440,7 @@
         const active = descriptorQty === value;
         circle.style.background = active ? 'currentColor' : 'transparent';
         circle.style.border     = '1px solid currentColor';
+        chip.style.color        = active ? '' : '#69707C';
       }
       refresh();
       chip.appendChild(circle);
@@ -472,10 +474,10 @@
       const circle = document.createElement('span');
       circle.style.cssText = 'display:inline-block; width:8px; height:8px; border-radius:50%; flex-shrink:0; transition:background 0.1s;';
       function refresh() {
-        circle.style.background = excludeParentDescs ? 'var(--gen-text-red)' : 'transparent';
-        circle.style.border     = excludeParentDescs ? '1px solid var(--gen-text-red)' : '1px solid currentColor';
-        chip.style.color        = excludeParentDescs ? 'var(--gen-text-red)' : '';
-        chip.style.border       = excludeParentDescs ? '1px solid var(--gen-text-red)' : '1px solid currentColor';
+        circle.style.background = excludeParentDescs ? '#FF6E6E' : 'transparent';
+        circle.style.border     = excludeParentDescs ? '1px solid #FF6E6E' : '1px solid currentColor';
+        chip.style.color        = excludeParentDescs ? '#FF6E6E' : '#69707C';
+        chip.style.border       = excludeParentDescs ? '1px solid #FF6E6E' : '1px solid currentColor';
       }
       refresh();
       chip.appendChild(circle);
