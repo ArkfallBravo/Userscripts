@@ -88,6 +88,7 @@
     table.album_info {
       font-size: 14px !important;
       border-collapse: collapse !important;
+      width: 550px !important;
     }
     table.album_info tr {
       border-bottom: 1px solid var(--mono-e, #ebebeb) !important;
@@ -163,10 +164,12 @@
     .release_pri_genres a.genre {
       background: color-mix(in srgb, var(--gen-blue-dark, #2a5298) 12%, transparent) !important;
       color: var(--gen-blue-dark, #2a5298) !important;
-      font-weight: ${EMPHASIS_WEIGHT} !important;
+      font-size: 16px !important;
+      font-weight: ${REGULAR_WEIGHT} !important;
     }
     .release_sec_genres a.genre {
       background: var(--mono-f0, #f0f0f0) !important;
+      font-size: 14px !important;
       color: var(--mono-6, #777) !important;
     }
     /* Secondary genres on their own line */
@@ -176,7 +179,7 @@
     /* ── Descriptor text: smaller and muted ─────── */
     /* CONFIRMED: .release_pri_descriptors */
     .release_pri_descriptors {
-      font-size: 12px !important;
+      font-size: 14px !important;
       color: var(--mono-7, #888) !important;
       line-height: 1.8 !important;
     }
@@ -431,9 +434,14 @@
     const albumInfoOuter = document.querySelector('table.album_info_outer');
     if (!albumInfoOuter) { return; }
 
-    const adTd = albumInfoOuter.querySelector('tbody > tr > td:last-child');
-    if (adTd && adTd !== albumInfoOuter.querySelector('tbody > tr > td:first-child')) {
-      adTd.classList.add('rcb-ad-hidden');
+    // Hide every cell except the first in the OUTER table's own row (the ad
+    // slot). Scope to direct children so the inner album_info cells are untouched.
+    const outerRow = albumInfoOuter.querySelector(':scope > tbody > tr, :scope > tr');
+    if (outerRow) {
+      Array.from(outerRow.children)
+        .filter(function (el) { return el.tagName === 'TD'; })
+        .slice(1)
+        .forEach(function (td) { td.style.display = 'none'; });
     }
 
     const userControls = buildUserControlsPanel();
