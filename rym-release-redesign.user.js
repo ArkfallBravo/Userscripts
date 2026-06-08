@@ -103,6 +103,7 @@
     }
     table.album_info_outer {
       margin-top: 0 !important;
+      width: auto !important;
     }
     table.album_info tr:first-child th,
     table.album_info tr:first-child td {
@@ -321,7 +322,7 @@
       gap: 24px !important;
       align-items: flex-start !important;
     }
-    .rcb-info-left { flex: 1 !important; min-width: 0 !important; }
+    .rcb-info-left { flex: 0 0 auto !important; min-width: 0 !important; }
     .rcb-user-controls {
       flex-shrink: 0 !important;
       width: 160px !important;
