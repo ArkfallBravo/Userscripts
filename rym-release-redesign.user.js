@@ -169,8 +169,9 @@
       background: var(--mono-f0, #f0f0f0) !important;
       color: var(--mono-6, #777) !important;
     }
-    /* Remove the <br> gap between primary and secondary genres */
+    /* Secondary genres on their own line */
     .release_pri_genres + br { display: none !important; }
+    .release_sec_genres { display: block !important; margin-top: 4px !important; }
 
     /* ── Descriptor text: smaller and muted ─────── */
     /* CONFIRMED: .release_pri_descriptors */
@@ -297,11 +298,72 @@
       box-shadow: 0 1px 0 rgba(0,0,0,0.08) !important;
     }
 
-    /* ── Ad slot alignment ───────────────────────── */
-    /* UNCONFIRMED: .album_info_outer */
-    .album_info_outer > tbody > tr > td:last-child {
-      vertical-align: top !important;
+    /* ── Hide row labels: info now flows without th labels ── */
+    th.info_hdr { display: none !important; }
+    table.album_info td { padding-left: 0 !important; }
+
+    /* ── Hide ad slot moved out of layout ────────── */
+    .rcb-ad-hidden { display: none !important; }
+
+    /* ── type·date meta line above title ─────────── */
+    .rcb-type-date {
+      font-size: 12px !important;
+      color: var(--mono-7, #888) !important;
+      margin-bottom: 6px !important;
     }
+
+    /* ── Two sub-columns: info left, user controls right ── */
+    .rcb-info-wrapper {
+      display: flex !important;
+      gap: 24px !important;
+      align-items: flex-start !important;
+    }
+    .rcb-info-left { flex: 1 !important; min-width: 0 !important; }
+    .rcb-user-controls {
+      flex-shrink: 0 !important;
+      width: 160px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 6px !important;
+    }
+
+    /* ── YOUR RATING label ───────────────────────── */
+    .rcb-rating-label {
+      font-size: 12px !important;
+      font-weight: 700 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.1em !important;
+      color: var(--mono-8, #aaa) !important;
+      margin-bottom: 2px !important;
+    }
+
+    /* ── Rating stars in right panel ─────────────── */
+    .rcb-user-controls .my_catalog_rating {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      align-items: center !important;
+      gap: 4px !important;
+      margin-bottom: 6px !important;
+    }
+
+    /* ── Action buttons: full-width stacked ──────── */
+    .rcb-user-controls .catalog_btn,
+    .rcb-user-controls .listening_btn,
+    .rcb-user-controls .review_btn,
+    .rcb-user-controls .track_rating_btn,
+    .rcb-user-controls .tag_btn,
+    .rcb-user-controls .bump_btn {
+      display: block !important;
+      width: 100% !important;
+      text-align: center !important;
+      box-sizing: border-box !important;
+    }
+    /* catalog dropdown doesn't fit in the column layout */
+    .rcb-user-controls .catalog_btn_options { display: none !important; }
+
+    /* ── section_my_catalog: hide header now that catalog is in right panel ── */
+    .section_my_catalog .release_page_header { display: none !important; }
+    .section_my_catalog > .page_section > .color_bar { display: none !important; }
 
     /* ── Color bar: slightly thicker, rounded ────── */
     /* UNCONFIRMED: table.color_bar */
@@ -320,34 +382,108 @@
 
   // ─── DOM MANIPULATION ─────────────────────────────────────────────────────
 
+  // Reads Type and Released rows from album_info, hides them, and returns
+  // a "Type · Year" meta div to insert above the album title.
+  function buildTypeDateLine() {
+    const rows = document.querySelectorAll('table.album_info tr');
+    let typeText = '';
+    let yearText = '';
+    rows.forEach(function (row) {
+      const th = row.querySelector('th.info_hdr');
+      if (!th) { return; }
+      const label = th.textContent.trim();
+      const td = row.querySelector('td');
+      if (!td) { return; }
+      if (label === 'Type') {
+        typeText = td.textContent.trim();
+        row.style.display = 'none';
+      } else if (label === 'Released') {
+        const link = td.querySelector('a');
+        yearText = link ? link.textContent.trim() : td.textContent.trim();
+        row.style.display = 'none';
+      }
+    });
+    if (!typeText && !yearText) { return null; }
+    const meta = document.createElement('div');
+    meta.className = 'rcb-type-date';
+    meta.textContent = [typeText, yearText].filter(Boolean).join(' · ');
+    return meta;
+  }
+
+  // Moves .release_my_catalog out of section_my_catalog and wraps it in the
+  // right-panel user-controls div with a YOUR RATING heading.
+  function buildUserControlsPanel() {
+    const releaseMyCatalog = document.querySelector('.release_my_catalog');
+    if (!releaseMyCatalog) { return null; }
+    const panel = document.createElement('div');
+    panel.className = 'rcb-user-controls';
+    const label = document.createElement('div');
+    label.className = 'rcb-rating-label';
+    label.textContent = 'Your Rating';
+    panel.appendChild(label);
+    panel.appendChild(releaseMyCatalog);
+    return panel;
+  }
+
+  // Wraps album_info_outer + user-controls panel in a flex row, replacing the
+  // original position of album_info_outer. Hides the ad-slot td.
+  function restructureMainInfo() {
+    const albumInfoOuter = document.querySelector('table.album_info_outer');
+    if (!albumInfoOuter) { return; }
+
+    const adTd = albumInfoOuter.querySelector('tbody > tr > td:last-child');
+    if (adTd && adTd !== albumInfoOuter.querySelector('tbody > tr > td:first-child')) {
+      adTd.classList.add('rcb-ad-hidden');
+    }
+
+    const userControls = buildUserControlsPanel();
+    if (!userControls) { return; }
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'rcb-info-wrapper';
+
+    const leftPanel = document.createElement('div');
+    leftPanel.className = 'rcb-info-left';
+
+    albumInfoOuter.parentElement.insertBefore(wrapper, albumInfoOuter);
+    leftPanel.appendChild(albumInfoOuter);
+    wrapper.appendChild(leftPanel);
+    wrapper.appendChild(userControls);
+  }
+
   function applyDomChanges() {
     if (DEBUG) { runDiagnostics(); }
 
     // 1. Wrap the rating row content so the score number is visually dominant.
-    //    CONFIRMED: .avg_rating is high-confidence.
     const avgRating = document.querySelector('.avg_rating');
     if (avgRating) {
       const ratingRow = avgRating.closest('tr');
       if (ratingRow) {
         const td = ratingRow.querySelector('td');
-        if (td) {
-          td.style.cssText = 'line-height:1; padding-bottom:12px';
-        }
+        if (td) { td.style.cssText = 'line-height:1; padding-bottom:12px'; }
       }
     }
 
     // 2. Remove comma text nodes between genre chips so the pill layout is clean.
-    //    CONFIRMED: both selectors verified.
     stripCommas(document.querySelector('.release_pri_genres'));
     stripCommas(document.querySelector('.release_sec_genres'));
 
     // 3. Reformat descriptor list: replace commas with interpuncts.
-    //    CONFIRMED: span.release_pri_descriptors
     const descEl = document.querySelector('.release_pri_descriptors');
     if (descEl) {
       const words = descEl.textContent.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
       descEl.textContent = words.join(' · ');
     }
+
+    // 4. Build and insert the type·date meta line above the album title.
+    const albumTitle = document.querySelector('.album_title');
+    const typeDateDiv = buildTypeDateLine();
+    if (albumTitle && typeDateDiv) {
+      albumTitle.parentElement.insertBefore(typeDateDiv, albumTitle);
+    }
+
+    // 5. Restructure main info into info-left + user-controls-right columns.
+    restructureMainInfo();
   }
 
   if (document.readyState === 'loading') {
