@@ -94,46 +94,51 @@
 
   // ─── DOM MANIPULATION ─────────────────────────────────────────────────────
 
-  // Renders each descriptor as its own span, with separator spans between
-  // them. Each separator always renders ' · ' so its width is constant; we
-  // only toggle visibility. A hidden separator still occupies its space, so
-  // hiding it never reflows the line — keeping a single measurement pass
-  // stable. Separators that fall at a line break are hidden, which removes
-  // leading/trailing interpuncts. A ResizeObserver re-runs on column resize.
+  // The container is set to display:flex + flex-wrap:wrap so each descriptor
+  // wrapper is an indivisible flex item — it can never split across rows.
+  // This makes position measurement reliable and keeps hidden separators
+  // trailing within their own item (never leading into the next row).
+  // Compares .top values: same row → within a few px; different row → ~line-height apart.
+  // A ResizeObserver re-runs on column width changes.
   function formatDescriptors(descEl) {
     const raw = descEl.textContent;
     const words = raw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
 
     descEl.textContent = '';
+    descEl.style.cssText += '; display:flex !important; flex-wrap:wrap !important; align-items:baseline;';
 
-    const spans = words.map(function (word, i) {
-      if (i > 0) {
+    const wrappers = words.map(function (word, i) {
+      const wrapper = document.createElement('span');
+      wrapper.style.whiteSpace = 'nowrap';
+
+      const desc = document.createElement('span');
+      desc.className = 'rcb-desc';
+      desc.textContent = word;
+      wrapper.appendChild(desc);
+
+      if (i < words.length - 1) {
         const sep = document.createElement('span');
         sep.className = 'rcb-sep';
-        sep.textContent = ' · ';
-        descEl.appendChild(sep);
+        sep.textContent = ' · ';
+        wrapper.appendChild(sep);
       }
-      const span = document.createElement('span');
-      span.className = 'rcb-desc';
-      span.textContent = word;
-      descEl.appendChild(span);
-      return span;
+
+      descEl.appendChild(wrapper);
+      return wrapper;
     });
 
-    const seps = Array.from(descEl.querySelectorAll('.rcb-sep'));
-
     function updateSeparators() {
-      for (let i = 0; i < spans.length - 1; i++) {
-        const aRect = spans[i].getBoundingClientRect();
-        const bRect = spans[i + 1].getBoundingClientRect();
-        const sameLine = Math.abs((aRect.top + aRect.bottom) - (bRect.top + bRect.bottom)) < 4;
-        seps[i].style.visibility = sameLine ? '' : 'hidden';
+      for (let i = 0; i < wrappers.length - 1; i++) {
+        const aTop = wrappers[i].getBoundingClientRect().top;
+        const bTop = wrappers[i + 1].getBoundingClientRect().top;
+        const sameLine = Math.abs(aTop - bTop) < 8;
+        const sep = wrappers[i].querySelector('.rcb-sep');
+        if (sep) { sep.style.visibility = sameLine ? '' : 'hidden'; }
       }
     }
 
     requestAnimationFrame(updateSeparators);
-    const target = descEl.closest('td') || descEl.parentElement;
-    new ResizeObserver(function () { requestAnimationFrame(updateSeparators); }).observe(target);
+    new ResizeObserver(function () { requestAnimationFrame(updateSeparators); }).observe(descEl);
   }
 
   function applyDomChanges() {
