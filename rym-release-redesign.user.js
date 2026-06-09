@@ -47,16 +47,64 @@
   const secondary_800 = okhsl(258, 44, 18);
   const secondary_900 = okhsl(253, 44, 8);
 
-  const scene_50  = okhsl(25, 87, 95);
-  const scene_100 = okhsl(22, 87, 85);
-  const scene_200 = okhsl(20, 87, 76);
-  const scene_300 = okhsl(18, 87, 66);
-  const scene_400 = okhsl(16, 87, 56);
-  const scene_500 = okhsl(14, 87, 47);
-  const scene_600 = okhsl(12, 87, 37);
-  const scene_700 = okhsl(10, 87, 27);
-  const scene_800 = okhsl(8,  87, 18);
-  const scene_900 = okhsl(6,  87, 8);
+  //   const hue   = 273.39430507048314;
+
+  // const grey_50  = okhsl(hue, 5, 95);
+  // const grey_100 = okhsl(hue, 5, 85);
+  // const grey_200 = okhsl(hue, 5, 75);
+  // const grey_300 = okhsl(hue, 5, 65);
+  // const grey_400 = okhsl(hue, 5, 55);
+  // const grey_500 = okhsl(hue, 5, 45);
+  // const grey_600 = okhsl(hue, 5, 35);
+  // const grey_700 = okhsl(hue, 5, 25);
+  // const grey_800 = okhsl(hue, 5, 15);
+  // const grey_900 = okhsl(hue, 5, 5);
+
+  // const primary_50  = okhsl(hue + 15, 85, 95);
+  // const primary_100 = okhsl(hue + 12, 85, 85);
+  // const primary_200 = okhsl(hue + 9, 85, 75);
+  // const primary_300 = okhsl(hue + 6, 85, 65);
+  // const primary_400 = okhsl(hue + 3, 85, 55);
+  // const primary_500 = okhsl(hue,     85, 45);       // base
+  // const primary_600 = okhsl(hue - 3, 85, 35);
+  // const primary_700 = okhsl(hue - 6, 85, 25);
+  // const primary_800 = okhsl(hue - 9, 85, 15);
+  // const primary_900 = okhsl(hue - 12, 85, 5);
+
+  // const secondary_50  = okhsl(hue + 15, 45, 95);
+  // const secondary_100 = okhsl(hue + 12, 45, 85);
+  // const secondary_200 = okhsl(hue + 9, 45, 75);
+  // const secondary_300 = okhsl(hue + 6, 45, 65);
+  // const secondary_400 = okhsl(hue + 3, 45, 55);
+  // const secondary_500 = okhsl(hue, 45, 45);
+  // const secondary_600 = okhsl(hue - 3, 45, 35);
+  // const secondary_700 = okhsl(hue - 6, 45, 25);
+  // const secondary_800 = okhsl(hue - 9, 45, 15);
+  // const secondary_900 = okhsl(hue - 12, 45, 5);
+
+  const font_weight_thin       = 100;
+  const font_weight_extralight = 200;
+  const font_weight_light      = 300;
+  const font_weight_normal     = 400;
+  const font_weight_medium     = 500;
+  const font_weight_semibold   = 600;
+  const font_weight_bold       = 700;
+  const font_weight_extrabold  = 800;
+  const font_weight_black      = 900;
+
+  const font_size_xs   = 12;
+  const font_size_sm   = 14;
+  const font_size_base = 16;
+  const font_size_lg   = 18;
+  const font_size_xl   = 20;
+  const font_size_2xl  = 24;
+  const font_size_3xl  = 30;
+  const font_size_4xl  = 36;
+  const font_size_5xl  = 48;
+  const font_size_6xl  = 60;
+  const font_size_7xl  = 72;
+
+
 
   // ─── OKHSL → HEX ─────────────────────────────────────────────────────────
   // Exact conversion per Björn Ottosson's reference implementation.
@@ -262,6 +310,8 @@
     '.avg_rating',
     '.release_my_catalog',
     '.catalog_btn',
+    '.album_title',
+    'table.album_info a'
   ];
 
   function runDiagnostics() {
@@ -288,21 +338,25 @@
       margin: 2px 3px 2px 0 !important;
     }
     .release_pri_genres a.genre {
-      background: color-mix(in srgb, ${primary_400} 25%, transparent) !important;
+      border: 2px solid ${primary_200} !important;
+      // background: color-mix(in srgb, ${primary_400} 25%, transparent) !important;
       color: ${primary_200} !important;
-      font-size: 16px !important;
-      font-weight: 400 !important;
+      font-size: ${font_size_base}px !important;
+      font-weight: ${font_weight_normal} !important;
     }
     .release_sec_genres a.genre {
-      background: color-mix(in srgb, ${grey_500} 25%, transparent) !important;
-      font-size: 14px !important;
+      border: 1px solid ${grey_300} !important;
+      // background: color-mix(in srgb, ${grey_500} 25%, transparent) !important;
+      font-size: ${font_size_sm}px !important;
       color: ${grey_300} !important;
+      font-weight: ${font_weight_normal} !important;
     }
-    .release_scene_genres a.genre {
-      background: color-mix(in srgb, ${secondary_400} 25%, transparent) !important;
+    .release_movement_genres a.genre {
+      background: transparent !important;
+      border: 0px solid ${primary_400} !important;
       color: ${primary_200} !important;
-      font-size: 16px !important;
-      font-weight: 400 !important;
+      font-size: ${font_size_base}px !important;
+      font-weight: ${font_weight_normal} !important;
     }
 
     /* Secondary genres on their own line */
@@ -312,13 +366,22 @@
     /* ── Album info table ───────────────────────── */
     table.album_info,
     table.album_info td {
-      font-size: 16px !important;
+      font-size: ${font_size_base}px !important;
       color: ${grey_50} !important;
+    }
+    .album_title a {
+      font-size: ${font_size_3xl}px !important;
+      color: ${primary_100} !important;
+    }
+    table.album_info a {
+      font-size: ${font_size_base}px !important;
+      color: ${primary_100} !important;
+      font-weight: ${font_weight_normal} !important;
     }
 
     /* ── Descriptor text ─────────────────────────── */
     .release_pri_descriptors {
-      font-size: 14px !important;
+      font-size: ${font_size_sm}px !important;
       color: ${grey_200} !important;
       line-height: 1.8 !important;
     }
@@ -339,12 +402,12 @@
   // trailing within their own item (never leading into the next row).
   // Compares .top values: same row → within a few px; different row → ~line-height apart.
   // A ResizeObserver re-runs on column width changes.
-  function tagSceneRows() {
+  function tagmovementRows() {
     document.querySelectorAll('tr.release_genres').forEach(function (row) {
       var hdr = row.querySelector('th.info_hdr');
       if (!hdr || hdr.textContent.trim() === 'Genres') { return; }
       var priGenres = row.querySelector('.release_pri_genres');
-      if (priGenres) { priGenres.classList.add('release_scene_genres'); }
+      if (priGenres) { priGenres.classList.add('release_movement_genres'); }
     });
   }
 
@@ -418,7 +481,7 @@
   function applyDomChanges() {
     if (DEBUG) { runDiagnostics(); }
 
-    tagSceneRows();
+    tagmovementRows();
 
     // Remove comma text nodes between genre chips so the pill layout is clean.
     document.querySelectorAll('.release_pri_genres').forEach(function (el) {
