@@ -14,6 +14,49 @@
 
   // Set to true to print a selector audit to the DevTools console.
   const DEBUG = true;
+  const grey_50  = okhsl(273.39430507048314, 6, 95);
+  const grey_100 = okhsl(273.39430507048314, 6, 85);
+  const grey_200 = okhsl(273.39430507048314, 6, 76);
+  const grey_300 = okhsl(273.39430507048314, 6, 66);
+  const grey_400 = okhsl(273.39430507048314, 6, 56);
+  const grey_500 = okhsl(273.39430507048314, 6, 47);
+  const grey_600 = okhsl(273.39430507048314, 6, 37);
+  const grey_700 = okhsl(273.39430507048314, 6, 27);
+  const grey_800 = okhsl(273.39430507048314, 6, 18);
+  const grey_900 = okhsl(273.39430507048314, 6, 8);
+
+  const primary_50  = okhsl(293, 87, 95);
+  const primary_100 = okhsl(290, 87, 85);
+  const primary_200 = okhsl(285, 87, 76);
+  const primary_300 = okhsl(280, 87, 66);
+  const primary_400 = okhsl(276, 87, 56);
+  const primary_500 = okhsl(273, 87, 47);
+  const primary_600 = okhsl(268, 87, 37);
+  const primary_700 = okhsl(263, 87, 27);
+  const primary_800 = okhsl(258, 87, 18);
+  const primary_900 = okhsl(253, 87, 8);
+
+  const secondary_50  = okhsl(293, 44, 95);
+  const secondary_100 = okhsl(290, 44, 85);
+  const secondary_200 = okhsl(285, 44, 76);
+  const secondary_300 = okhsl(280, 44, 66);
+  const secondary_400 = okhsl(276, 44, 56);
+  const secondary_500 = okhsl(273, 44, 47);
+  const secondary_600 = okhsl(268, 44, 37);
+  const secondary_700 = okhsl(263, 44, 27);
+  const secondary_800 = okhsl(258, 44, 18);
+  const secondary_900 = okhsl(253, 44, 8);
+
+  const scene_50  = okhsl(25, 87, 95);
+  const scene_100 = okhsl(22, 87, 85);
+  const scene_200 = okhsl(20, 87, 76);
+  const scene_300 = okhsl(18, 87, 66);
+  const scene_400 = okhsl(16, 87, 56);
+  const scene_500 = okhsl(14, 87, 47);
+  const scene_600 = okhsl(12, 87, 37);
+  const scene_700 = okhsl(10, 87, 27);
+  const scene_800 = okhsl(8,  87, 18);
+  const scene_900 = okhsl(6,  87, 8);
 
   // ─── OKHSL → HEX ─────────────────────────────────────────────────────────
   // Exact conversion per Björn Ottosson's reference implementation.
@@ -245,15 +288,21 @@
       margin: 2px 3px 2px 0 !important;
     }
     .release_pri_genres a.genre {
-      background: color-mix(in srgb, var(--gen-blue-dark, #2a5298) 12%, transparent) !important;
-      color: var(--gen-blue-dark, #2a5298) !important;
+      background: color-mix(in srgb, ${primary_400} 25%, transparent) !important;
+      color: ${primary_200} !important;
       font-size: 16px !important;
       font-weight: 400 !important;
     }
     .release_sec_genres a.genre {
-      background: var(--mono-f0, #f0f0f0) !important;
+      background: color-mix(in srgb, ${grey_500} 25%, transparent) !important;
       font-size: 14px !important;
-      color: var(--mono-6, #777) !important;
+      color: ${grey_300} !important;
+    }
+    .release_scene_genres a.genre {
+      background: color-mix(in srgb, ${secondary_400} 25%, transparent) !important;
+      color: ${primary_200} !important;
+      font-size: 16px !important;
+      font-weight: 400 !important;
     }
 
     /* Secondary genres on their own line */
@@ -264,13 +313,13 @@
     table.album_info,
     table.album_info td {
       font-size: 16px !important;
-      color: ${okhsl(273.39430507048314, 30.0, 95.0)} !important;
+      color: ${grey_50} !important;
     }
 
     /* ── Descriptor text ─────────────────────────── */
     .release_pri_descriptors {
       font-size: 14px !important;
-      color: ${okhsl(273.39430507048314, 23.684210526315788, 75.0)} !important;
+      color: ${grey_200} !important;
       line-height: 1.8 !important;
     }
 
@@ -290,18 +339,28 @@
   // trailing within their own item (never leading into the next row).
   // Compares .top values: same row → within a few px; different row → ~line-height apart.
   // A ResizeObserver re-runs on column width changes.
+  function tagSceneRows() {
+    document.querySelectorAll('tr.release_genres').forEach(function (row) {
+      var hdr = row.querySelector('th.info_hdr');
+      if (!hdr || hdr.textContent.trim() === 'Genres') { return; }
+      var priGenres = row.querySelector('.release_pri_genres');
+      if (priGenres) { priGenres.classList.add('release_scene_genres'); }
+    });
+  }
+
   function alignFirstChipsPerRow(el) {
     if (!el) { return; }
     const chips = Array.from(el.querySelectorAll('a.genre'));
 
     function update() {
       requestAnimationFrame(function () {
-        const containerLeft = el.getBoundingClientRect().left;
-        chips.forEach(function (chip) {
-          const chipLeft = chip.getBoundingClientRect().left;
-          const appliedMargin = parseFloat(chip.style.getPropertyValue('margin-left')) || 0;
-          const naturalLeft = chipLeft - appliedMargin;
-          const isFirst = Math.abs(naturalLeft - containerLeft) < 4;
+        var naturals = chips.map(function (chip) {
+          var margin = parseFloat(chip.style.getPropertyValue('margin-left')) || 0;
+          return chip.getBoundingClientRect().left - margin;
+        });
+        var rowLeft = Math.min.apply(null, naturals);
+        chips.forEach(function (chip, i) {
+          var isFirst = naturals[i] - rowLeft < 4;
           if (isFirst) {
             chip.style.setProperty('margin-left', '-10px', 'important');
           } else {
@@ -359,13 +418,17 @@
   function applyDomChanges() {
     if (DEBUG) { runDiagnostics(); }
 
-    // Remove comma text nodes between genre chips so the pill layout is clean.
-    stripCommas(document.querySelector('.release_pri_genres'));
-    stripCommas(document.querySelector('.release_sec_genres'));
+    tagSceneRows();
 
-    // Reformat descriptor list with line-aware interpuncts.
-    alignFirstChipsPerRow(document.querySelector('.release_pri_genres'));
-    alignFirstChipsPerRow(document.querySelector('.release_sec_genres'));
+    // Remove comma text nodes between genre chips so the pill layout is clean.
+    document.querySelectorAll('.release_pri_genres').forEach(function (el) {
+      stripCommas(el);
+      alignFirstChipsPerRow(el);
+    });
+    document.querySelectorAll('.release_sec_genres').forEach(function (el) {
+      stripCommas(el);
+      alignFirstChipsPerRow(el);
+    });
     const descEl = document.querySelector('.release_pri_descriptors');
     if (descEl) { formatDescriptors(descEl); }
   }
