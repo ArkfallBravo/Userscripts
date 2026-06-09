@@ -83,10 +83,17 @@
     .release_pri_genres + br { display: none !important; }
     .release_sec_genres { display: block !important; margin-top: 4px !important; }
 
+    /* ── Album info table ───────────────────────── */
+    table.album_info,
+    table.album_info td {
+      font-size: 16px !important;
+      color: #EBF5FE !important;
+    }
+
     /* ── Descriptor text ─────────────────────────── */
     .release_pri_descriptors {
       font-size: 14px !important;
-      color: var(--mono-7, #888) !important;
+      color: #C4C9DA !important;
       line-height: 1.8 !important;
     }
 
@@ -94,12 +101,43 @@
 
   // ─── DOM MANIPULATION ─────────────────────────────────────────────────────
 
+  // Applies margin-left: -10px (equal to chip padding-left) to every chip whose
+  // natural left edge aligns with the container — i.e. the first chip on each
+  // wrapped row. This makes the pill background overhang left while the label
+  // text stays flush with the content column edge.
+  // Measures after layout via rAF and compensates for any already-applied margin
+  // so the ResizeObserver never triggers a feedback loop.
   // The container is set to display:flex + flex-wrap:wrap so each descriptor
   // wrapper is an indivisible flex item — it can never split across rows.
   // This makes position measurement reliable and keeps hidden separators
   // trailing within their own item (never leading into the next row).
   // Compares .top values: same row → within a few px; different row → ~line-height apart.
   // A ResizeObserver re-runs on column width changes.
+  function alignFirstChipsPerRow(el) {
+    if (!el) { return; }
+    const chips = Array.from(el.querySelectorAll('a.genre'));
+
+    function update() {
+      requestAnimationFrame(function () {
+        const containerLeft = el.getBoundingClientRect().left;
+        chips.forEach(function (chip) {
+          const chipLeft = chip.getBoundingClientRect().left;
+          const appliedMargin = parseFloat(chip.style.getPropertyValue('margin-left')) || 0;
+          const naturalLeft = chipLeft - appliedMargin;
+          const isFirst = Math.abs(naturalLeft - containerLeft) < 4;
+          if (isFirst) {
+            chip.style.setProperty('margin-left', '-10px', 'important');
+          } else {
+            chip.style.removeProperty('margin-left');
+          }
+        });
+      });
+    }
+
+    requestAnimationFrame(update);
+    new ResizeObserver(function () { requestAnimationFrame(update); }).observe(el);
+  }
+
   function formatDescriptors(descEl) {
     const raw = descEl.textContent;
     const words = raw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
@@ -149,6 +187,8 @@
     stripCommas(document.querySelector('.release_sec_genres'));
 
     // Reformat descriptor list with line-aware interpuncts.
+    alignFirstChipsPerRow(document.querySelector('.release_pri_genres'));
+    alignFirstChipsPerRow(document.querySelector('.release_sec_genres'));
     const descEl = document.querySelector('.release_pri_descriptors');
     if (descEl) { formatDescriptors(descEl); }
   }
