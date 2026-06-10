@@ -13,74 +13,56 @@
   'use strict';
 
   // Set to true to print a selector audit to the DevTools console.
-  const DEBUG = true;
-  const grey_50  = okhsl(273.39430507048314, 6, 95);
-  const grey_100 = okhsl(273.39430507048314, 6, 85);
-  const grey_200 = okhsl(273.39430507048314, 6, 76);
-  const grey_300 = okhsl(273.39430507048314, 6, 66);
-  const grey_400 = okhsl(273.39430507048314, 6, 56);
-  const grey_500 = okhsl(273.39430507048314, 6, 47);
-  const grey_600 = okhsl(273.39430507048314, 6, 37);
-  const grey_700 = okhsl(273.39430507048314, 6, 27);
-  const grey_800 = okhsl(273.39430507048314, 6, 18);
-  const grey_900 = okhsl(273.39430507048314, 6, 8);
+  const DEBUG      = true;
+  const purple       = 273.39430507048314;
+  const blue         = 259.67189104481287;
+  const hue_dominant = blue;
+  const hue_accent   = hue_dominant + 60;
+  const curve        = 0;
 
-  const primary_50  = okhsl(293, 87, 95);
-  const primary_100 = okhsl(290, 87, 85);
-  const primary_200 = okhsl(285, 87, 76);
-  const primary_300 = okhsl(280, 87, 66);
-  const primary_400 = okhsl(276, 87, 56);
-  const primary_500 = okhsl(273, 87, 47);
-  const primary_600 = okhsl(268, 87, 37);
-  const primary_700 = okhsl(263, 87, 27);
-  const primary_800 = okhsl(258, 87, 18);
-  const primary_900 = okhsl(253, 87, 8);
+  const grey_50  = okhsl(hue_dominant, 5, 95);
+  const grey_100 = okhsl(hue_dominant, 5, 85);
+  const grey_200 = okhsl(hue_dominant, 5, 75);
+  const grey_300 = okhsl(hue_dominant, 5, 65);
+  const grey_400 = okhsl(hue_dominant, 5, 55);
+  const grey_500 = okhsl(hue_dominant, 5, 45);
+  const grey_600 = okhsl(hue_dominant, 5, 35);
+  const grey_700 = okhsl(hue_dominant, 5, 25);
+  const grey_800 = okhsl(hue_dominant, 5, 15);
+  const grey_900 = okhsl(hue_dominant, 5, 5);
 
-  const secondary_50  = okhsl(293, 44, 95);
-  const secondary_100 = okhsl(290, 44, 85);
-  const secondary_200 = okhsl(285, 44, 76);
-  const secondary_300 = okhsl(280, 44, 66);
-  const secondary_400 = okhsl(276, 44, 56);
-  const secondary_500 = okhsl(273, 44, 47);
-  const secondary_600 = okhsl(268, 44, 37);
-  const secondary_700 = okhsl(263, 44, 27);
-  const secondary_800 = okhsl(258, 44, 18);
-  const secondary_900 = okhsl(253, 44, 8);
+  const primary_50  = okhsl(hue_dominant + 5 * curve, 85, 95);
+  const primary_100 = okhsl(hue_dominant + 4 * curve, 85, 85);
+  const primary_200 = okhsl(hue_dominant + 3 * curve, 85, 75);
+  const primary_300 = okhsl(hue_dominant + 2 * curve, 85, 65);
+  const primary_400 = okhsl(hue_dominant + 1 * curve, 85, 55);
+  const primary_500 = okhsl(hue_dominant + 0 * curve, 85, 45);       // base
+  const primary_600 = okhsl(hue_dominant - 1 * curve, 85, 35);
+  const primary_700 = okhsl(hue_dominant - 2 * curve, 85, 25);
+  const primary_800 = okhsl(hue_dominant - 3 * curve, 85, 15);
+  const primary_900 = okhsl(hue_dominant - 4 * curve, 85,  5);
 
-  //   const hue   = 273.39430507048314;
+  const secondary_50  = okhsl(hue_dominant + 5 * curve, 45, 95);
+  const secondary_100 = okhsl(hue_dominant + 4 * curve, 45, 85);
+  const secondary_200 = okhsl(hue_dominant + 3 * curve, 45, 75);
+  const secondary_300 = okhsl(hue_dominant + 2 * curve, 45, 65);
+  const secondary_400 = okhsl(hue_dominant + 1 * curve, 45, 55);
+  const secondary_500 = okhsl(hue_dominant + 0 * curve, 45, 45);       // base
+  const secondary_600 = okhsl(hue_dominant - 1 * curve, 45, 35);
+  const secondary_700 = okhsl(hue_dominant - 2 * curve, 45, 25);
+  const secondary_800 = okhsl(hue_dominant - 3 * curve, 45, 15);
+  const secondary_900 = okhsl(hue_dominant - 4 * curve, 45,  5);
 
-  // const grey_50  = okhsl(hue, 5, 95);
-  // const grey_100 = okhsl(hue, 5, 85);
-  // const grey_200 = okhsl(hue, 5, 75);
-  // const grey_300 = okhsl(hue, 5, 65);
-  // const grey_400 = okhsl(hue, 5, 55);
-  // const grey_500 = okhsl(hue, 5, 45);
-  // const grey_600 = okhsl(hue, 5, 35);
-  // const grey_700 = okhsl(hue, 5, 25);
-  // const grey_800 = okhsl(hue, 5, 15);
-  // const grey_900 = okhsl(hue, 5, 5);
-
-  // const primary_50  = okhsl(hue + 15, 85, 95);
-  // const primary_100 = okhsl(hue + 12, 85, 85);
-  // const primary_200 = okhsl(hue + 9, 85, 75);
-  // const primary_300 = okhsl(hue + 6, 85, 65);
-  // const primary_400 = okhsl(hue + 3, 85, 55);
-  // const primary_500 = okhsl(hue,     85, 45);       // base
-  // const primary_600 = okhsl(hue - 3, 85, 35);
-  // const primary_700 = okhsl(hue - 6, 85, 25);
-  // const primary_800 = okhsl(hue - 9, 85, 15);
-  // const primary_900 = okhsl(hue - 12, 85, 5);
-
-  // const secondary_50  = okhsl(hue + 15, 45, 95);
-  // const secondary_100 = okhsl(hue + 12, 45, 85);
-  // const secondary_200 = okhsl(hue + 9, 45, 75);
-  // const secondary_300 = okhsl(hue + 6, 45, 65);
-  // const secondary_400 = okhsl(hue + 3, 45, 55);
-  // const secondary_500 = okhsl(hue, 45, 45);
-  // const secondary_600 = okhsl(hue - 3, 45, 35);
-  // const secondary_700 = okhsl(hue - 6, 45, 25);
-  // const secondary_800 = okhsl(hue - 9, 45, 15);
-  // const secondary_900 = okhsl(hue - 12, 45, 5);
+  const tertiary_50  = okhsl(hue_accent + 5 * curve, 45, 95);
+  const tertiary_100 = okhsl(hue_accent + 4 * curve, 45, 85);
+  const tertiary_200 = okhsl(hue_accent + 3 * curve, 45, 75);
+  const tertiary_300 = okhsl(hue_accent + 2 * curve, 45, 65);
+  const tertiary_400 = okhsl(hue_accent + 1 * curve, 45, 55);
+  const tertiary_500 = okhsl(hue_accent + 0 * curve, 45, 45);       // base
+  const tertiary_600 = okhsl(hue_accent - 1 * curve, 45, 35);
+  const tertiary_700 = okhsl(hue_accent - 2 * curve, 45, 25);
+  const tertiary_800 = okhsl(hue_accent - 3 * curve, 45, 15);
+  const tertiary_900 = okhsl(hue_accent - 4 * curve, 45,  5);
 
   const font_weight_thin       = 100;
   const font_weight_extralight = 200;
@@ -364,19 +346,46 @@
     .release_sec_genres { display: block !important; margin-top: 4px !important; }
 
     /* ── Album info table ───────────────────────── */
-    table.album_info,
-    table.album_info td {
-      font-size: ${font_size_base}px !important;
-      color: ${grey_50} !important;
+    th.info_hdr {
+      font-size: ${font_size_sm}px !important;
+      color: ${grey_400} !important;
+      font-weight: ${font_weight_normal} !important;
     }
     .album_title a {
       font-size: ${font_size_3xl}px !important;
-      color: ${primary_100} !important;
+      color: ${grey_50} !important;
+    }
+    table.album_info,
+    table.album_info td {
+      font-size: ${font_size_base}px !important;
+      color: ${grey_100} !important;
     }
     table.album_info a {
       font-size: ${font_size_base}px !important;
-      color: ${primary_100} !important;
+      color: ${primary_200} !important;
       font-weight: ${font_weight_normal} !important;
+    }
+    table.album_info b {
+      font-size: ${font_size_base}px !important;
+      color: ${grey_100} !important;
+      font-weight: ${font_weight_bold} !important;
+    }
+    .avg_rating {
+      font-size: ${font_size_xl}px !important;
+      font-weight: ${font_weight_bold} !important;
+    }
+    .avg_rating_friends {
+      font-size: ${font_size_base}px !important;
+      color: ${tertiary_200} !important;
+      font-weight: ${font_weight_normal} !important;
+    }
+    .max_rating {
+      font-size: ${font_size_base}px !important;
+      color: ${grey_300} !important;
+    }
+    .num_ratings {
+      font-size: ${font_size_sm}px !important;
+      color: ${grey_300} !important;
     }
 
     /* ── Descriptor text ─────────────────────────── */
