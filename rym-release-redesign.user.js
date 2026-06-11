@@ -16,7 +16,8 @@
   const DEBUG      = true;
   const purple       = 273.39430507048314;
   const blue         = 259.67189104481287;
-  const hue_dominant = blue;
+  const red          = 22.524391836136154;
+  const hue_dominant = purple;
   const hue_accent   = hue_dominant + 60;
   const curve        = 0;
 
@@ -49,9 +50,6 @@
     return entry.scale[newKey] !== undefined ? entry.scale[newKey] : hex;
   }
 
-  function palette(scale, key) {
-    return scale[key];
-  }
 
   function makeUniformScale(h, s) {
     return makeScale(SHADE_KEYS.map(function () { return h; }), s);
@@ -312,7 +310,7 @@
     /* Type scale (Refactoring UI): 12 · 14 · 16 · 18 · 20 · 24 · 30 · 36 · 48 · 60 · 72 px */
 
     // .section_main_info a {
-    //   color: ${palette(primary, 200)} !important;
+    //   color: ${primary[200]} !important;
     // }
 
     /* ── Genre chips ─────────────────────────────── */
@@ -326,23 +324,23 @@
       margin: 2px 3px 2px 0 !important;
     }
     .release_pri_genres a.genre {
-      border: 2px solid ${palette(primary, 200)} !important;
-      // background: color-mix(in srgb, ${palette(primary, 400)} 25%, transparent) !important;
-      color: ${palette(primary, 200)} !important;
+      border: 2px solid ${primary[200]} !important;
+      // background: color-mix(in srgb, ${primary[400]} 25%, transparent) !important;
+      color: ${primary[200]} !important;
       font-size: ${font_size_base}px !important;
       font-weight: ${font_weight_normal} !important;
     }
     .release_sec_genres a.genre {
-      border: 1px solid ${palette(grey, 300)} !important;
-      // background: color-mix(in srgb, ${palette(grey, 400)} 25%, transparent) !important;
+      border: 1px solid ${grey[300]} !important;
+      // background: color-mix(in srgb, ${grey[400]} 25%, transparent) !important;
       font-size: ${font_size_sm}px !important;
-      color: ${palette(grey, 300)} !important;
+      color: ${grey[300]} !important;
       font-weight: ${font_weight_normal} !important;
     }
     .release_movement_genres a.genre {
       background: transparent !important;
-      border: 0px solid ${palette(primary, 400)} !important;
-      color: ${palette(primary, 200)} !important;
+      border: 0px solid ${primary[400]} !important;
+      color: ${primary[200]} !important;
       font-size: ${font_size_base}px !important;
       font-weight: ${font_weight_normal} !important;
     }
@@ -354,68 +352,68 @@
     /* ── Album info table ───────────────────────── */
     th.info_hdr {
       font-size: ${font_size_sm}px !important;
-      color: ${palette(grey, 400)} !important;
+      color: ${grey[400]} !important;
       font-weight: ${font_weight_normal} !important;
     }
     .album_title a {
       font-size: ${font_size_3xl}px !important;
-      color: ${palette(primary, 50)} !important;
+      color: ${primary[50]} !important;
     }
     table.album_info,
     table.album_info td {
       font-size: ${font_size_base}px !important;
-      color: ${palette(grey, 300)} !important;
+      color: ${grey[300]} !important;
     }
     table.album_info a {
       font-size: ${font_size_base}px !important;
-      color: ${palette(primary, 200)} !important;
+      color: ${primary[200]} !important;
       font-weight: ${font_weight_normal} !important;
     }
     table.album_info b {
       font-size: ${font_size_base}px !important;
-      color: ${palette(grey, 300)} !important;
+      color: ${grey[300]} !important;
       font-weight: ${font_weight_bold} !important;
     }
     .avg_rating {
       font-size: ${font_size_xl}px !important;
       font-weight: ${font_weight_bold} !important;
-      color: ${palette(grey, 50)} !important;
+      color: ${grey[50]} !important;
     }
     .avg_rating_friends {
       font-size: ${font_size_base}px !important;
-      color: ${palette(tertiary, 300)} !important;
+      color: ${tertiary[300]} !important;
       font-weight: ${font_weight_normal} !important;
     }
     .max_rating {
       font-size: ${font_size_base}px !important;
-      color: ${palette(grey, 400)} !important;
+      color: ${grey[400]} !important;
     }
     .num_ratings {
       font-size: ${font_size_sm}px !important;
-      color: ${palette(grey, 400)} !important;
+      color: ${grey[400]} !important;
     }
     tr.tr-released b {
       font-size: ${font_size_base}px !important;
-      color: ${palette(secondary, 300)} !important;
+      color: ${secondary[300]} !important;
       font-weight: ${font_weight_normal} !important;
     }
     tr.tr-ranking b {
-      color: ${palette(grey, 100)} !important;
+      color: ${grey[100]} !important;
     }
     tr.tr-ranking td {
-      color: ${palette(grey, 100)} !important;
+      color: ${grey[200]} !important;
     }
 
     /* ── Descriptor text ─────────────────────────── */
     .release_pri_descriptors {
       font-size: ${font_size_sm}px !important;
-      color: ${palette(grey, 200)} !important;
+      color: ${grey[200]} !important;
       line-height: 1.8 !important;
     }
 
     /* —— genre and descriptor vote buttons ————————— */
     .genre_descriptor_vote_btn i.fa {
-      color: ${palette(grey, 500)} !important;
+      color: ${grey[500]} !important;
     }
 
   `);
