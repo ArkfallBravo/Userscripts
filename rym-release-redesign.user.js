@@ -309,6 +309,10 @@
 
     /* Type scale (Refactoring UI): 12 · 14 · 16 · 18 · 20 · 24 · 30 · 36 · 48 · 60 · 72 px */
 
+    // .section_main_info a {
+    //   color: ${primary_200} !important;
+    // }
+
     /* ── Genre chips ─────────────────────────────── */
     .release_pri_genres a.genre,
     .release_sec_genres a.genre {
@@ -328,7 +332,7 @@
     }
     .release_sec_genres a.genre {
       border: 1px solid ${grey_300} !important;
-      // background: color-mix(in srgb, ${grey_500} 25%, transparent) !important;
+      // background: color-mix(in srgb, ${grey_400} 25%, transparent) !important;
       font-size: ${font_size_sm}px !important;
       color: ${grey_300} !important;
       font-weight: ${font_weight_normal} !important;
@@ -353,7 +357,7 @@
     }
     .album_title a {
       font-size: ${font_size_3xl}px !important;
-      color: ${grey_50} !important;
+      color: ${primary_50} !important;
     }
     table.album_info,
     table.album_info td {
@@ -367,7 +371,7 @@
     }
     table.album_info b {
       font-size: ${font_size_base}px !important;
-      color: ${grey_100} !important;
+      color: ${grey_300} !important;
       font-weight: ${font_weight_bold} !important;
     }
     .avg_rating {
@@ -376,16 +380,16 @@
     }
     .avg_rating_friends {
       font-size: ${font_size_base}px !important;
-      color: ${tertiary_200} !important;
+      color: ${tertiary_300} !important;
       font-weight: ${font_weight_normal} !important;
     }
     .max_rating {
       font-size: ${font_size_base}px !important;
-      color: ${grey_300} !important;
+      color: ${grey_400} !important;
     }
     .num_ratings {
       font-size: ${font_size_sm}px !important;
-      color: ${grey_300} !important;
+      color: ${grey_400} !important;
     }
 
     /* ── Descriptor text ─────────────────────────── */
@@ -393,6 +397,11 @@
       font-size: ${font_size_sm}px !important;
       color: ${grey_200} !important;
       line-height: 1.8 !important;
+    }
+
+    /* —— genre and descriptor vote buttons ————————— */
+    .genre_descriptor_vote_btn i.fa { 
+      color: ${grey_500} !important;
     }
 
   `);
@@ -411,6 +420,15 @@
   // trailing within their own item (never leading into the next row).
   // Compares .top values: same row → within a few px; different row → ~line-height apart.
   // A ResizeObserver re-runs on column width changes.
+  function tagInfoRows() {
+    document.querySelectorAll('table.album_info tr').forEach(function (row) {
+      var hdr = row.querySelector('th.info_hdr');
+      if (!hdr) { return; }
+      var label = hdr.textContent.trim();
+      if (label === 'Released') { row.classList.add('tr-released'); }
+    });
+  }
+
   function tagmovementRows() {
     document.querySelectorAll('tr.release_genres').forEach(function (row) {
       var hdr = row.querySelector('th.info_hdr');
@@ -490,6 +508,7 @@
   function applyDomChanges() {
     if (DEBUG) { runDiagnostics(); }
 
+    tagInfoRows();
     tagmovementRows();
 
     // Remove comma text nodes between genre chips so the pill layout is clean.
