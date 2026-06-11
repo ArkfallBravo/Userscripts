@@ -20,49 +20,51 @@
   const hue_accent   = hue_dominant + 60;
   const curve        = 0;
 
-  const grey_50  = okhsl(hue_dominant, 5, 95);
-  const grey_100 = okhsl(hue_dominant, 5, 85);
-  const grey_200 = okhsl(hue_dominant, 5, 75);
-  const grey_300 = okhsl(hue_dominant, 5, 65);
-  const grey_400 = okhsl(hue_dominant, 5, 55);
-  const grey_500 = okhsl(hue_dominant, 5, 45);
-  const grey_600 = okhsl(hue_dominant, 5, 35);
-  const grey_700 = okhsl(hue_dominant, 5, 25);
-  const grey_800 = okhsl(hue_dominant, 5, 15);
-  const grey_900 = okhsl(hue_dominant, 5, 5);
+  // ─── COLOUR SCALES ───────────────────────────────────────────────────────────
+  // Each scale is a plain object keyed by shade number (50, 100 … 900).
+  // The shadeRegistry maps each hex value back to its scale + key so that
+  // shade(hex, delta) can resolve the shifted colour without re-computing.
 
-  const primary_50  = okhsl(hue_dominant + 5 * curve, 85, 95);
-  const primary_100 = okhsl(hue_dominant + 4 * curve, 85, 85);
-  const primary_200 = okhsl(hue_dominant + 3 * curve, 85, 75);
-  const primary_300 = okhsl(hue_dominant + 2 * curve, 85, 65);
-  const primary_400 = okhsl(hue_dominant + 1 * curve, 85, 55);
-  const primary_500 = okhsl(hue_dominant + 0 * curve, 85, 45);       // base
-  const primary_600 = okhsl(hue_dominant - 1 * curve, 85, 35);
-  const primary_700 = okhsl(hue_dominant - 2 * curve, 85, 25);
-  const primary_800 = okhsl(hue_dominant - 3 * curve, 85, 15);
-  const primary_900 = okhsl(hue_dominant - 4 * curve, 85,  5);
+  const SHADE_KEYS   = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+  const SHADE_LIGHTS = [95,  85,  75,  65,  55,  45,  35,  25,  15,   5];
+  const shadeRegistry = new Map();
 
-  const secondary_50  = okhsl(hue_dominant + 5 * curve, 45, 95);
-  const secondary_100 = okhsl(hue_dominant + 4 * curve, 45, 85);
-  const secondary_200 = okhsl(hue_dominant + 3 * curve, 45, 75);
-  const secondary_300 = okhsl(hue_dominant + 2 * curve, 45, 65);
-  const secondary_400 = okhsl(hue_dominant + 1 * curve, 45, 55);
-  const secondary_500 = okhsl(hue_dominant + 0 * curve, 45, 45);       // base
-  const secondary_600 = okhsl(hue_dominant - 1 * curve, 45, 35);
-  const secondary_700 = okhsl(hue_dominant - 2 * curve, 45, 25);
-  const secondary_800 = okhsl(hue_dominant - 3 * curve, 45, 15);
-  const secondary_900 = okhsl(hue_dominant - 4 * curve, 45,  5);
+  function makeScale(hues, s) {
+    var scale = {};
+    SHADE_KEYS.forEach(function (k, i) {
+      var hex = okhsl(hues[i], s, SHADE_LIGHTS[i]);
+      scale[k] = hex;
+      shadeRegistry.set(hex, { scale: scale, key: k });
+    });
+    return scale;
+  }
 
-  const tertiary_50  = okhsl(hue_accent + 5 * curve, 45, 95);
-  const tertiary_100 = okhsl(hue_accent + 4 * curve, 45, 85);
-  const tertiary_200 = okhsl(hue_accent + 3 * curve, 45, 75);
-  const tertiary_300 = okhsl(hue_accent + 2 * curve, 45, 65);
-  const tertiary_400 = okhsl(hue_accent + 1 * curve, 45, 55);
-  const tertiary_500 = okhsl(hue_accent + 0 * curve, 45, 45);       // base
-  const tertiary_600 = okhsl(hue_accent - 1 * curve, 45, 35);
-  const tertiary_700 = okhsl(hue_accent - 2 * curve, 45, 25);
-  const tertiary_800 = okhsl(hue_accent - 3 * curve, 45, 15);
-  const tertiary_900 = okhsl(hue_accent - 4 * curve, 45,  5);
+  // shade(hex, delta) — returns the colour delta shade-steps away in the same scale.
+  // delta=-100 → one step brighter, delta=100 → one step darker.
+  // Returns hex unchanged if the shifted key doesn't exist in the scale.
+  function shade(hex, delta) {
+    var entry = shadeRegistry.get(hex);
+    if (!entry) { return hex; }
+    var newKey = entry.key + delta;
+    return entry.scale[newKey] !== undefined ? entry.scale[newKey] : hex;
+  }
+
+  function palette(scale, key) {
+    return scale[key];
+  }
+
+  function makeUniformScale(h, s) {
+    return makeScale(SHADE_KEYS.map(function () { return h; }), s);
+  }
+
+  function makeCurvedScale(h, s, c) {
+    return makeScale(SHADE_KEYS.map(function (k, i) { return h + (5 - i) * c; }), s);
+  }
+
+  const grey      = makeUniformScale(hue_dominant, 5);
+  const primary   = makeCurvedScale(hue_dominant, 85, curve);
+  const secondary = makeCurvedScale(hue_dominant, 45, curve);
+  const tertiary  = makeCurvedScale(hue_accent,   45, curve);
 
   const font_weight_thin       = 100;
   const font_weight_extralight = 200;
@@ -310,7 +312,7 @@
     /* Type scale (Refactoring UI): 12 · 14 · 16 · 18 · 20 · 24 · 30 · 36 · 48 · 60 · 72 px */
 
     // .section_main_info a {
-    //   color: ${primary_200} !important;
+    //   color: ${palette(primary, 200)} !important;
     // }
 
     /* ── Genre chips ─────────────────────────────── */
@@ -324,23 +326,23 @@
       margin: 2px 3px 2px 0 !important;
     }
     .release_pri_genres a.genre {
-      border: 2px solid ${primary_200} !important;
-      // background: color-mix(in srgb, ${primary_400} 25%, transparent) !important;
-      color: ${primary_200} !important;
+      border: 2px solid ${palette(primary, 200)} !important;
+      // background: color-mix(in srgb, ${palette(primary, 400)} 25%, transparent) !important;
+      color: ${palette(primary, 200)} !important;
       font-size: ${font_size_base}px !important;
       font-weight: ${font_weight_normal} !important;
     }
     .release_sec_genres a.genre {
-      border: 1px solid ${grey_300} !important;
-      // background: color-mix(in srgb, ${grey_400} 25%, transparent) !important;
+      border: 1px solid ${palette(grey, 300)} !important;
+      // background: color-mix(in srgb, ${palette(grey, 400)} 25%, transparent) !important;
       font-size: ${font_size_sm}px !important;
-      color: ${grey_300} !important;
+      color: ${palette(grey, 300)} !important;
       font-weight: ${font_weight_normal} !important;
     }
     .release_movement_genres a.genre {
       background: transparent !important;
-      border: 0px solid ${primary_400} !important;
-      color: ${primary_200} !important;
+      border: 0px solid ${palette(primary, 400)} !important;
+      color: ${palette(primary, 200)} !important;
       font-size: ${font_size_base}px !important;
       font-weight: ${font_weight_normal} !important;
     }
@@ -352,56 +354,68 @@
     /* ── Album info table ───────────────────────── */
     th.info_hdr {
       font-size: ${font_size_sm}px !important;
-      color: ${grey_400} !important;
+      color: ${palette(grey, 400)} !important;
       font-weight: ${font_weight_normal} !important;
     }
     .album_title a {
       font-size: ${font_size_3xl}px !important;
-      color: ${primary_50} !important;
+      color: ${palette(primary, 50)} !important;
     }
     table.album_info,
     table.album_info td {
       font-size: ${font_size_base}px !important;
-      color: ${grey_100} !important;
+      color: ${palette(grey, 300)} !important;
     }
     table.album_info a {
       font-size: ${font_size_base}px !important;
-      color: ${primary_200} !important;
+      color: ${palette(primary, 200)} !important;
       font-weight: ${font_weight_normal} !important;
     }
     table.album_info b {
       font-size: ${font_size_base}px !important;
-      color: ${grey_300} !important;
+      color: ${palette(grey, 300)} !important;
       font-weight: ${font_weight_bold} !important;
     }
     .avg_rating {
       font-size: ${font_size_xl}px !important;
       font-weight: ${font_weight_bold} !important;
+      color: ${palette(grey, 50)} !important;
     }
     .avg_rating_friends {
       font-size: ${font_size_base}px !important;
-      color: ${tertiary_300} !important;
+      color: ${palette(tertiary, 300)} !important;
       font-weight: ${font_weight_normal} !important;
     }
     .max_rating {
       font-size: ${font_size_base}px !important;
-      color: ${grey_400} !important;
+      color: ${palette(grey, 400)} !important;
     }
     .num_ratings {
       font-size: ${font_size_sm}px !important;
-      color: ${grey_400} !important;
+      color: ${palette(grey, 400)} !important;
+    }
+    tr.tr-released b {
+      font-size: ${font_size_base}px !important;
+      color: ${palette(secondary, 300)} !important;
+      font-weight: ${font_weight_normal} !important;
+    }
+    tr.tr-ranking b {
+      color: ${palette(grey, 100)} !important;
+    }
+    tr.tr-ranking td {
+      color: ${palette(grey, 100)} !important;
     }
 
     /* ── Descriptor text ─────────────────────────── */
     .release_pri_descriptors {
       font-size: ${font_size_sm}px !important;
-      color: ${grey_200} !important;
+      color: ${palette(grey, 200)} !important;
       line-height: 1.8 !important;
     }
 
     /* —— genre and descriptor vote buttons ————————— */
-    .genre_descriptor_vote_btn i.fa { 
-      color: ${grey_500} !important;
+    .genre_descriptor_vote_btn i.fa {
+      color: ${palette(grey, 500)} !important;
     }
 
   `);
