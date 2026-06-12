@@ -216,8 +216,10 @@
 
   // ─── Colour constants ─────────────────────────────────────────────────────────
 
-  const RED_HUE = 29.23388519234265;
-  const red     = makeUniformScale(RED_HUE, 85);
+  const red      = 29.23388519234265;
+  const destruct = makeUniformScale(red, 85);
+//   const red      = 22.524391836136154;
+//   const destruct = makeUniformScale(red, 100);
 
   // ─────────────────────────────────────────────────────────────────────────────
 
