@@ -347,7 +347,8 @@
 
     /* Secondary genres on their own line */
     .release_pri_genres + br { display: none !important; }
-    .release_sec_genres { display: block !important; margin-top: 4px !important; }
+    .release_pri_genres { display: block !important; margin-left: -10px !important; }
+    .release_sec_genres { display: block !important; margin-top: 4px !important; margin-left: -10px !important; }
 
     /* ── Album info table ───────────────────────── */
     th.info_hdr {
@@ -450,32 +451,6 @@
     });
   }
 
-  function alignFirstChipsPerRow(el) {
-    if (!el) { return; }
-    const chips = Array.from(el.querySelectorAll('a.genre'));
-
-    function update() {
-      requestAnimationFrame(function () {
-        var naturals = chips.map(function (chip) {
-          var margin = parseFloat(chip.style.getPropertyValue('margin-left')) || 0;
-          return chip.getBoundingClientRect().left - margin;
-        });
-        var rowLeft = Math.min.apply(null, naturals);
-        chips.forEach(function (chip, i) {
-          var isFirst = naturals[i] - rowLeft < 4;
-          if (isFirst) {
-            chip.style.setProperty('margin-left', '-10px', 'important');
-          } else {
-            chip.style.removeProperty('margin-left');
-          }
-        });
-      });
-    }
-
-    requestAnimationFrame(update);
-    new ResizeObserver(function () { requestAnimationFrame(update); }).observe(el);
-  }
-
   function formatDescriptors(descEl) {
     const raw = descEl.textContent;
     const words = raw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
@@ -523,15 +498,8 @@
     tagInfoRows();
     tagmovementRows();
 
-    // Remove comma text nodes between genre chips so the pill layout is clean.
-    document.querySelectorAll('.release_pri_genres').forEach(function (el) {
-      stripCommas(el);
-      alignFirstChipsPerRow(el);
-    });
-    document.querySelectorAll('.release_sec_genres').forEach(function (el) {
-      stripCommas(el);
-      alignFirstChipsPerRow(el);
-    });
+    document.querySelectorAll('.release_pri_genres').forEach(function (el) { stripCommas(el); });
+    document.querySelectorAll('.release_sec_genres').forEach(function (el) { stripCommas(el); });
     const descEl = document.querySelector('.release_pri_descriptors');
     if (descEl) { formatDescriptors(descEl); }
   }
