@@ -1,7 +1,17 @@
+// ----------------------------------------------------------------------- //
+//
+// MODULE  : RYM Set Listening as Date Tag.user.js
+//
+// PURPOSE : Replaces RYM's "Set Listening" button with a date-tagging one
+//
+// CREATED : 5/14/2026
+//
+// ----------------------------------------------------------------------- //
+
 // ==UserScript==
 // @name         RYM Set Listening as Date Tag
 // @namespace    http://tampermonkey.net/
-// @version      1.0
+// @version      1.1
 // @description  Replaces the "Set Listening" button with one that appends today's date to the release's tags.
 // @author       lillyanasimson
 // @match        https://rateyourmusic.com/release/*
@@ -13,9 +23,35 @@
 (function () {
   'use strict';
 
-  function todayTag() {
+  const US_DATE_PATTERN = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+  const DASHED_DATE_PATTERN = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
+
+  // Returns a zero-padded yyyy-mm-dd string.
+  function formatIsoDate(year, month, day)
+  {
+    return year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+  }
+
+  function todayTag()
+  {
     const d = new Date();
-    return (d.getMonth() + 1) + '/' + d.getDate() + '/' + d.getFullYear();
+    return formatIsoDate(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  }
+
+  // Converts an m/d/yyyy or yyyy-m-d tag to yyyy-mm-dd; returns any other tag unchanged.
+  function toIsoTag(tag)
+  {
+    const usMatch = tag.match(US_DATE_PATTERN);
+    if (usMatch)
+    {
+      return formatIsoDate(usMatch[3], usMatch[1], usMatch[2]);
+    }
+    const dashedMatch = tag.match(DASHED_DATE_PATTERN);
+    if (dashedMatch)
+    {
+      return formatIsoDate(dashedMatch[1], dashedMatch[2], dashedMatch[3]);
+    }
+    return tag;
   }
 
   function addDateTag() {
@@ -23,7 +59,8 @@
     if (!input) return;
 
     const dateStr = todayTag();
-    const existing = input.value.split(',').map(function (t) { return t.trim(); }).filter(Boolean);
+    const converted = input.value.split(',').map(function (t) { return t.trim(); }).filter(Boolean).map(toIsoTag);
+    const existing = Array.from(new Set(converted));
 
     if (!existing.includes(dateStr)) existing.push(dateStr);
     if (!existing.includes('dated')) existing.push('dated');

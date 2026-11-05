@@ -60,9 +60,9 @@
   }
 
   const grey      = makeUniformScale(hue_dominant, 5);
-  const primary   = makeCurvedScale(hue_dominant, 85, curve);
-  const secondary = makeCurvedScale(hue_dominant, 45, curve);
-  const tertiary  = makeCurvedScale(hue_accent,   45, curve);
+  const primary   = makeCurvedScale(hue_dominant, 100, curve);
+  const secondary = makeCurvedScale(hue_dominant, 50, curve);
+  const tertiary  = makeCurvedScale(hue_accent,   50, curve);
 
   const font_weight_thin       = 100;
   const font_weight_extralight = 200;
